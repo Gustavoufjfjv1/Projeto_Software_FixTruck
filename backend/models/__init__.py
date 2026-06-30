@@ -9,5 +9,3 @@ from .veiculo import Veiculo
 from .ocorrencia import Ocorrencia
 from .orcamento import Orcamento
 from .mensagem_chat import MensagemChat
-
-__all__ = ["db", "ModeloBase", "Usuario", "Empresa", "Gestor", "Motorista", "Oficina", "Veiculo", "Ocorrencia", "Orcamento", "MensagemChat"]
