@@ -11,7 +11,7 @@ class Motorista(Usuario):
     __tablename__ = "motoristas"
 
     cnh = db.Column(db.String(11), nullable=True)
-    veiculos = db.relationship("Veiculo", back_populates="motorista", cascade="all, delete-orphan")
+    veiculos = db.relationship("Veiculo", back_populates="motorista")
 
 class Oficina(Usuario):
     __tablename__ = "oficinas"

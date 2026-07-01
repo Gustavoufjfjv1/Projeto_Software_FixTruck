@@ -9,9 +9,9 @@ class Orcamento(ModeloBase):
     valor_mao_obra = db.Column(db.Numeric(10, 2), nullable=False)
     status = db.Column(db.String(20), default="Pendente", nullable=False)
     ocorrencia_id = db.Column(db.Integer, db.ForeignKey("ocorrencias.id"), nullable=False)
-    ocorrencia = db.relationship("Ocorrencia", backref=db.backref("orcamentos", cascade="all, delete-orphan"))
+    ocorrencia = db.relationship("Ocorrencia", back_populates="orcamentos")
     oficina_id = db.Column(db.Integer, db.ForeignKey("oficinas.id"), nullable=False)
-    oficina = db.relationship("Oficina", backref="orcamentos")
+    oficina = db.relationship("Oficina", back_populates="orcamentos")
     
     def calcularTotal(self):
         return self.valor_pecas + self.valor_mao_obra

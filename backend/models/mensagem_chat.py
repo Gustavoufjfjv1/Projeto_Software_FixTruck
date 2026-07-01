@@ -9,5 +9,5 @@ class MensagemChat(ModeloBase):
     tipo_remetente = db.Column(db.String(20), nullable=False)
     remetente_id = db.Column(db.Integer, nullable=False)
     ocorrencia_id = db.Column(db.Integer, db.ForeignKey("ocorrencias.id"), nullable=False)
-    ocorrencia = db.relationship("Ocorrencia", backref=db.backref("mensagens", cascade="all, delete-orphan"))
+    ocorrencia = db.relationship("Ocorrencia", back_populates="mensagens")
     url_foto = db.Column(db.String(200), nullable=True)

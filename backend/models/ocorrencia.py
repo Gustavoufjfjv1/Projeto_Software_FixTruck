@@ -14,10 +14,10 @@ class Ocorrencia(ModeloBase):
     observacao = db.Column(db.String(200), nullable=False)
     motorista_id = db.Column(db.Integer, db.ForeignKey("motoristas.id"), nullable=True)
     veiculo_id = db.Column(db.Integer, db.ForeignKey("veiculos.id"), nullable=True)
-    motorista = db.relationship("Motorista", backref="ocorrencias")
-    veiculo = db.relationship("Veiculo", backref="ocorrencias")
+    motorista = db.relationship("Motorista", back_populates="ocorrencias")
+    veiculo = db.relationship("Veiculo", back_populates="ocorrencias")
     empresa_id = db.Column(db.Integer, db.ForeignKey("empresas.id"), nullable=False)
-    empresa = db.relationship("Empresa", backref="ocorrencias")
+    empresa = db.relationship("Empresa", back_populates="ocorrencias")
 
     def calcularDowntime(self):
         if self.data_fechamento:
