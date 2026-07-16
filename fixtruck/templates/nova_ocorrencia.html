@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Nova Ocorrência — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Nova Ocorrência</h1>
+        <p>Registre o problema para encontrar oficinas próximas</p>
+    </div>
+    <a href="{{ url_for('ocorrencias') }}" class="btn btn-outline">← Voltar</a>
+</div>
+
+<div style="max-width:680px">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Dados da Ocorrência</span></div>
+
+        <div class="alert alert-info">
+            ℹ A data e hora serão registradas automaticamente no momento de abertura.
+        </div>
+
+        <form method="POST" action="{{ url_for('nova_ocorrencia') }}" id="ocForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tipo de Veículo *</label>
+                    <select name="tipo_veiculo" required>
+                        <option value="">Selecione...</option>
+                        <option value="leve">Leve (até 3,5t)</option>
+                        <option value="médio">Médio (3,5t – 16t)</option>
+                        <option value="pesado">Pesado (acima de 16t)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Problema *</label>
+                    <select name="tipo_problema" required>
+                        <option value="">Selecione...</option>
+                        <option value="mecânica">Mecânica</option>
+                        <option value="elétrica">Elétrica</option>
+                        <option value="hidráulica">Hidráulica</option>
+                        <option value="borracharia">Borracharia / Pneu</option>
+                        <option value="não identificado">Não identificado</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Pane Total?</label>
+                <label class="checkbox-label">
+                    <input type="checkbox" name="pane_total" value="1">
+                    Sim — o veículo está completamente parado (prioriza oficinas com guincho)
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>Localização</label>
+                <button type="button" class="location-btn" onclick="getLocation()">
+                    📍 Usar minha localização atual
+                </button>
+                <input type="text" name="endereco" id="endereco" placeholder="Ou digite o endereço / rodovia / KM..." style="margin-top:0">
+                <input type="hidden" name="lat" id="lat">
+                <input type="hidden" name="lon" id="lon">
+                <div id="locStatus" style="font-size:12px;color:var(--gray-400);margin-top:6px"></div>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:8px">
+                <button type="submit" class="btn btn-primary" style="flex:1">Abrir Ocorrência e Buscar Oficinas →</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function getLocation() {
+    const btn = document.querySelector('.location-btn');
+    const status = document.getElementById('locStatus');
+    btn.textContent = '⏳ Obtendo localização...';
+    btn.disabled = true;
+    if (!navigator.geolocation) {
+        status.textContent = 'Geolocalização não suportada neste navegador.';
+        btn.disabled = false;
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('lat').value = pos.coords.latitude;
+        document.getElementById('lon').value = pos.coords.longitude;
+        document.getElementById('endereco').value = `Lat: ${pos.coords.latitude.toFixed(5)}, Lon: ${pos.coords.longitude.toFixed(5)}`;
+        status.textContent = '✅ Localização capturada com sucesso!';
+        status.style.color = 'var(--green)';
+        btn.textContent = '✅ Localização obtida';
+        btn.style.background = 'var(--green-muted)';
+    }, err => {
+        status.textContent = 'Não foi possível obter localização. Digite o endereço manualmente.';
+        btn.textContent = '📍 Usar minha localização atual';
+        btn.disabled = false;
+    });
+}
+</script>
+{% endblock %}

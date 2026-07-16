@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Oficinas Próximas — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Oficinas Próximas</h1>
+        <p>Ocorrência #{{ ocorrencia.id }} — {{ ocorrencia.tipo_veiculo }} / {{ ocorrencia.tipo_problema }}
+           {% if ocorrencia.pane_total %}<span class="badge badge-red" style="margin-left:8px">PANE TOTAL</span>{% endif %}
+        </p>
+    </div>
+    <a href="{{ url_for('ocorrencias') }}" class="btn btn-outline">← Ocorrências</a>
+</div>
+
+{% if ocorrencia.pane_total %}
+<div class="alert alert-warning">
+    🚨 <strong>Pane total detectada.</strong> Resultados priorizados por <strong>disponibilidade de guincho</strong> e depois por distância.
+</div>
+{% endif %}
+
+{% if not ocorrencia.lat %}
+<div class="alert alert-info">
+    📍 Localização não capturada — mostrando todas as oficinas. Para filtrar por distância, registre a localização na ocorrência.
+</div>
+{% endif %}
+
+{% if oficinas %}
+<div class="oficinas-grid">
+{% for of in oficinas %}
+<div class="oficina-card {% if of.atende_tipo %}{% endif %}">
+    {% if of.tem_guincho %}
+    <div style="position:absolute;top:14px;right:14px">
+        <span class="guincho-badge">🪝 Guincho</span>
+    </div>
+    {% endif %}
+
+    <div class="oficina-card-header">
+        <div>
+            <div class="oficina-name">{{ of.nome }}</div>
+            <div class="oficina-sub">{{ of.endereco }}</div>
+        </div>
+    </div>
+
+    <div class="oficina-tags">
+        {% for esp in (of.especialidades or '').split(',') %}
+        {% if esp.strip() %}
+        <span class="oficina-tag {% if esp.strip().lower() == ocorrencia.tipo_problema.lower() %}{% endif %}"
+              style="{% if esp.strip().lower() == ocorrencia.tipo_problema.lower() %}background:var(--green);color:white{% endif %}">
+            {{ esp.strip() }}
+        </span>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="oficina-meta">
+        {% if of.distancia is not none %}
+        <span>📍 {{ of.distancia }} km</span>
+        {% endif %}
+        <span>
+            {% if of.aberta_agora %}
+            <span style="color:var(--green);font-weight:600">● Aberta agora</span>
+            {% else %}
+            <span style="color:var(--red)">● Fechada</span>
+            {% endif %}
+        </span>
+        <span>🚛 {{ of.tipos_veiculo }}</span>
+    </div>
+
+    <div style="margin-top:12px;font-size:13px;color:var(--gray-600)">
+        ⏰ {{ of.hora_abertura }} – {{ of.hora_fechamento }}
+        {% if of.telefone %} &nbsp;|&nbsp; 📞 {{ of.telefone }}{% endif %}
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:16px;align-items:center">
+        <a href="{{ url_for('encerrar_ocorrencia', ocorrencia_id=ocorrencia.id) }}?oficina_id={{ of.id }}"
+           class="btn btn-primary btn-sm">Selecionar esta oficina</a>
+        <a href="{{ url_for('detalhe_oficina', oficina_id=of.id) }}" class="btn btn-outline btn-sm">Ver detalhes</a>
+        <form method="POST" action="{{ url_for('favoritar', oficina_id=of.id) }}" style="margin-left:auto">
+            <input type="hidden" name="next" value="{{ request.url }}">
+            <button type="submit" class="fav-btn {% if of.favoritada %}active{% endif %}" title="Favoritar">
+                {{ '⭐' if of.favoritada else '☆' }}
+            </button>
+        </form>
+    </div>
+
+    {% if of.atende_tipo %}
+    <div style="margin-top:10px;font-size:12px;color:var(--green);font-weight:600">✔ Atende o tipo de problema informado</div>
+    {% endif %}
+    {% if of.atende_veiculo %}
+    <div style="font-size:12px;color:var(--green);font-weight:600">✔ Atende o tipo de veículo</div>
+    {% endif %}
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🔧</div>
+    <h3>Nenhuma oficina cadastrada</h3>
+    <p>Entre em contato com o suporte para ampliar a rede de oficinas na sua região.</p>
+</div>
+{% endif %}
+
+<div style="margin-top:24px;text-align:center">
+    <a href="{{ url_for('encerrar_ocorrencia', ocorrencia_id=ocorrencia.id) }}" class="btn btn-outline">
+        Encerrar ocorrência manualmente
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Login — FixTruck{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-left">
+        <div class="auth-logo"><span>🚛</span>Fix<strong>Truck</strong></div>
+        <h1 class="auth-title">Bem-vindo de volta!</h1>
+        <p class="auth-sub">Entre com seus dados para acessar a conta</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+        <div class="alert alert-{{ 'info' if cat == 'success' else 'warning' }}" style="margin-bottom:16px">⚠ {{ msg }}</div>
+        {% endfor %}{% endwith %}
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+            <label>Senha <a href="#" style="float:right;font-size:12px;color:var(--green)">Esqueci a senha</a></label>
+            <input type="password" id="senha" placeholder="••••••••">
+        </div>
+        <label class="checkbox-label" style="margin-bottom:24px">
+            <input type="checkbox" id="remember"> Lembrar-me
+        </label>
+        <button class="btn btn-primary btn-full" onclick="doLogin()">Login</button>
+
+        <div style="text-align:center;margin-top:24px;font-size:13px;color:var(--gray-400)">
+            ── ou continue com ──
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+            <button class="btn btn-outline" onclick="loginDemo()">🧪 Conta Demo</button>
+            <a href="{{ url_for('cadastro') }}" class="btn btn-outline" style="justify-content:center">Cadastre-se</a>
+        </div>
+        <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--gray-400)">
+            Não tem uma conta? <a href="{{ url_for('cadastro') }}" style="color:var(--green);font-weight:600">Sign Up</a>
+        </p>
+    </div>
+    <div class="auth-right">
+        <div class="auth-tagline">
+            <span class="big-icon">🛣️</span>
+            <h2>Sua frota nunca para</h2>
+            <p>Gerencie ocorrências, encontre oficinas e reduza o tempo parado dos seus caminhões.</p>
+        </div>
+    </div>
+</div>
+
+<form id="loginForm" action="{{ url_for('login') }}" method="POST" style="display:none">
+    <input type="hidden" name="email" id="fEmail">
+    <input type="hidden" name="senha" id="fSenha">
+</form>
+
+<script>
+function doLogin() {
+    document.getElementById('fEmail').value = document.getElementById('email').value;
+    document.getElementById('fSenha').value = document.getElementById('senha').value;
+    document.getElementById('loginForm').submit();
+}
+function loginDemo() {
+    document.getElementById('fEmail').value = 'demo@fixtruck.com';
+    document.getElementById('fSenha').value = '123456';
+    document.getElementById('loginForm').submit();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+{% endblock %}
