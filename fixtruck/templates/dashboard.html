@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Visão geral da operação de {{ session.empresa_nome }}</p>
+    </div>
+    <a href="{{ url_for('nova_ocorrencia') }}" class="btn btn-primary">⚠ Nova Ocorrência</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card red">
+        <div class="stat-label">Ocorrências Abertas</div>
+        <div class="stat-value">{{ ocorrencias_abertas }}</div>
+        <div class="stat-sub">necessitam atenção</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total de Ocorrências</div>
+        <div class="stat-value">{{ total_ocorrencias }}</div>
+        <div class="stat-sub">histórico completo</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-label">Tempo Médio Parado</div>
+        <div class="stat-value">{{ tempo_medio }}<span style="font-size:16px;font-weight:400">min</span></div>
+        <div class="stat-sub">por ocorrência encerrada</div>
+    </div>
+    <div class="stat-card blue">
+        <div class="stat-label">Problema Mais Comum</div>
+        <div class="stat-value" style="font-size:18px;padding-top:6px;text-transform:capitalize">{{ problema_comum }}</div>
+        <div class="stat-sub">tipo predominante</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Ocorrências Recentes</span>
+            <a href="{{ url_for('ocorrencias') }}" class="btn btn-outline btn-sm">Ver todas</a>
+        </div>
+        {% if recentes %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th><th>Tipo Veículo</th><th>Problema</th><th>Status</th><th>Data</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for oc in recentes %}
+                <tr>
+                    <td style="font-weight:700;color:var(--gray-400)">#{{ oc.id }}</td>
+                    <td><span style="text-transform:capitalize">{{ oc.tipo_veiculo }}</span></td>
+                    <td><span style="text-transform:capitalize">{{ oc.tipo_problema }}</span></td>
+                    <td>
+                        {% if oc.status == 'aberta' %}
+                        <span class="badge badge-red"><span class="status-dot dot-red"></span>Aberta</span>
+                        {% elif oc.status == 'em_atendimento' %}
+                        <span class="badge badge-orange"><span class="status-dot dot-orange"></span>Em Atendimento</span>
+                        {% else %}
+                        <span class="badge badge-green"><span class="status-dot dot-green"></span>Encerrada</span>
+                        {% endif %}
+                    </td>
+                    <td style="color:var(--gray-400);font-size:13px">{{ oc.data_abertura[:16] if oc.data_abertura else '-' }}</td>
+                    <td>
+                        {% if oc.status != 'encerrada' %}
+                        <a href="{{ url_for('buscar_oficinas', ocorrencia_id=oc.id) }}" class="btn btn-outline btn-sm">Ver</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>Nenhuma ocorrência ainda</h3>
+            <p>Quando um caminhão parar, registre aqui.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Ação Rápida</span></div>
+            <a href="{{ url_for('nova_ocorrencia') }}" class="btn btn-primary btn-full" style="margin-bottom:10px">⚠ Registrar Ocorrência</a>
+            <a href="{{ url_for('oficinas') }}" class="btn btn-outline btn-full" style="margin-bottom:10px">🔧 Buscar Oficinas</a>
+            <a href="{{ url_for('relatorios') }}" class="btn btn-outline btn-full">📊 Ver Relatórios</a>
+        </div>
+        <div class="card">
+            <div class="card-header"><span class="card-title">Status da Frota</span></div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:14px;color:var(--gray-600)">🟢 Operando</span>
+                    <span style="font-weight:700">{{ total_ocorrencias }}</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:14px;color:var(--gray-600)">🔴 Com problema</span>
+                    <span style="font-weight:700;color:var(--red)">{{ ocorrencias_abertas }}</span>
+                </div>
+                <div style="height:1px;background:var(--gray-100)"></div>
+                <a href="{{ url_for('relatorios') }}" style="font-size:13px;color:var(--green);text-decoration:none;font-weight:600">Ver relatório completo →</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

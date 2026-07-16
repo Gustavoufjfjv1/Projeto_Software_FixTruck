@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Oficinas — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Rede de Oficinas</h1>
+        <p>{{ oficinas|length }} oficinas cadastradas na plataforma</p>
+    </div>
+</div>
+
+<form method="GET" action="{{ url_for('oficinas') }}" style="margin-bottom:20px">
+    <div class="filters-bar">
+        <div class="search-input-wrap" style="max-width:400px">
+            <span class="search-icon">🔍</span>
+            <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar por nome ou tipo de serviço..."
+                   style="padding-left:36px;width:100%;padding-top:9px;padding-bottom:9px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;outline:none">
+        </div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        {% if busca %}<a href="{{ url_for('oficinas') }}" class="btn btn-outline">✕ Limpar</a>{% endif %}
+    </div>
+</form>
+
+{% if oficinas %}
+<div class="oficinas-grid">
+{% for of in oficinas %}
+<div class="oficina-card">
+    {% if of.tem_guincho %}
+    <div style="position:absolute;top:14px;right:14px">
+        <span class="guincho-badge">🪝 Guincho</span>
+    </div>
+    {% endif %}
+
+    <div class="oficina-card-header">
+        <div>
+            <div class="oficina-name">{{ of.nome }}</div>
+            <div class="oficina-sub">{{ of.endereco }}</div>
+        </div>
+    </div>
+
+    <div class="oficina-tags">
+        {% for esp in (of.especialidades or '').split(',') %}
+        {% if esp.strip() %}<span class="oficina-tag">{{ esp.strip() }}</span>{% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="oficina-meta">
+        <span>
+            {% if of.aberta_agora %}
+            <span style="color:var(--green);font-weight:600">● Aberta agora</span>
+            {% else %}
+            <span style="color:var(--gray-400)">● Fechada</span>
+            {% endif %}
+        </span>
+        <span>⏰ {{ of.hora_abertura }}–{{ of.hora_fechamento }}</span>
+    </div>
+
+    <div style="margin-top:8px;font-size:12px;color:var(--gray-500)">
+        🚛 Veículos: <strong>{{ of.tipos_veiculo }}</strong>
+    </div>
+
+    <div class="oficina-actions">
+        <a href="{{ url_for('detalhe_oficina', oficina_id=of.id) }}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center">Ver detalhes</a>
+        <form method="POST" action="{{ url_for('favoritar', oficina_id=of.id) }}">
+            <input type="hidden" name="next" value="{{ request.url }}">
+            <button type="submit" class="fav-btn {% if of.favoritada %}active{% endif %}" title="Favoritar">
+                {{ '⭐' if of.favoritada else '☆' }}
+            </button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🔧</div>
+    <h3>Nenhuma oficina encontrada</h3>
+    <p>Tente buscar por outro termo.</p>
+</div>
+{% endif %}
+{% endblock %}

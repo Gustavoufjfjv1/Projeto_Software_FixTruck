@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Encerrar Ocorrência — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Encerrar Ocorrência #{{ ocorrencia.id }}</h1>
+        <p>Registre a resolução e a oficina utilizada</p>
+    </div>
+    <a href="{{ url_for('ocorrencias') }}" class="btn btn-outline">← Voltar</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Dados da Ocorrência</span></div>
+        <div class="info-row"><span class="info-label">Tipo de veículo</span><span class="info-value" style="text-transform:capitalize">{{ ocorrencia.tipo_veiculo }}</span></div>
+        <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">{{ ocorrencia.tipo_problema }}</span></div>
+        <div class="info-row"><span class="info-label">Pane total</span><span class="info-value">{{ 'Sim' if ocorrencia.pane_total else 'Não' }}</span></div>
+        <div class="info-row"><span class="info-label">Local</span><span class="info-value" style="font-size:13px">{{ ocorrencia.endereco or '—' }}</span></div>
+        <div class="info-row"><span class="info-label">Abertura</span><span class="info-value" style="font-size:13px">{{ ocorrencia.data_abertura[:16] if ocorrencia.data_abertura else '—' }}</span></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><span class="card-title">Registro de Encerramento</span></div>
+
+        <div class="alert alert-warning" style="margin-bottom:16px">
+            ⚠ Selecionar uma oficina é <strong>obrigatório</strong> para encerrar a ocorrência.
+        </div>
+
+        <form method="POST" action="{{ url_for('encerrar_ocorrencia', ocorrencia_id=ocorrencia.id) }}">
+            <div class="form-group">
+                <label>Oficina Utilizada *</label>
+                <select name="oficina_id" required>
+                    <option value="">Selecione a oficina...</option>
+                    {% for of in oficinas %}
+                    <option value="{{ of.id }}" {% if request.args.get('oficina_id') == of.id|string %}selected{% endif %}>
+                        {{ of.nome }} — {{ of.endereco }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Motivo da Resolução *</label>
+                <select name="motivo" required>
+                    <option value="">Selecione...</option>
+                    <option value="Problema resolvido na oficina">Resolvido na oficina</option>
+                    <option value="Troca de peça">Troca de peça</option>
+                    <option value="Reparo no local">Reparo no local</option>
+                    <option value="Rebocado até a base">Rebocado até a base</option>
+                    <option value="Falso alarme">Falso alarme</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Observações (opcional)</label>
+                <textarea name="observacoes" placeholder="Descreva o que foi feito, peças trocadas, valor pago, etc..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">✔ Confirmar Encerramento</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
