@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Orçamentos — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Orçamentos</h1>
+        <p>Aprove ou rejeite digitalmente orçamentos enviados pelas oficinas</p>
+    </div>
+</div>
+
+<div class="card">
+    <form method="GET" action="{{ url_for('orcamentos') }}">
+        <div class="filters-bar">
+            <select name="status" class="filter-select" onchange="this.form.submit()">
+                <option value="">Todos</option>
+                <option value="pendente" {% if filtro_status == 'pendente' %}selected{% endif %}>Pendentes</option>
+                <option value="aprovado" {% if filtro_status == 'aprovado' %}selected{% endif %}>Aprovados</option>
+                <option value="rejeitado" {% if filtro_status == 'rejeitado' %}selected{% endif %}>Rejeitados</option>
+            </select>
+            {% if filtro_status %}
+            <a href="{{ url_for('orcamentos') }}" class="btn btn-outline btn-sm">✕ Limpar</a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if orcamentos %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Ocorrência</th>
+                    <th>Veículo</th>
+                    <th>Oficina</th>
+                    <th>Problema</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Enviado em</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for o in orcamentos %}
+            <tr>
+                <td style="font-weight:700;color:var(--gray-400)">#{{ o.id }}</td>
+                <td><a href="{{ url_for('detalhe_ocorrencia', ocorrencia_id=o.ocorrencia_id) }}">#{{ o.ocorrencia_id }}</a></td>
+                <td>{{ o.veiculo_placa or '—' }}</td>
+                <td>{{ o.oficina_nome }}</td>
+                <td style="text-transform:capitalize">{{ o.tipo_problema }}</td>
+                <td style="font-weight:700">R$ {{ '%.2f'|format(o.total) }}</td>
+                <td>
+                    {% if o.status == 'pendente' %}
+                    <span class="badge badge-orange">Pendente</span>
+                    {% elif o.status == 'aprovado' %}
+                    <span class="badge badge-green">Aprovado</span>
+                    {% else %}
+                    <span class="badge badge-red">Rejeitado</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:13px;color:var(--gray-600)">{{ o.data_envio[:16] if o.data_envio else '—' }}</td>
+                <td>
+                    {% if o.status == 'pendente' %}
+                    <div style="display:flex;gap:6px">
+                        <form method="POST" action="{{ url_for('decidir_orcamento', orcamento_id=o.id) }}">
+                            <input type="hidden" name="decisao" value="aprovar">
+                            <button type="submit" class="btn btn-primary btn-sm">Aprovar</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('decidir_orcamento', orcamento_id=o.id) }}">
+                            <input type="hidden" name="decisao" value="rejeitar">
+                            <button type="submit" class="btn btn-danger btn-sm">Rejeitar</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('detalhe_ocorrencia', ocorrencia_id=o.ocorrencia_id) }}" class="btn btn-outline btn-sm">Ver</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">💵</div>
+        <h3>Nenhum orçamento encontrado</h3>
+        <p>Orçamentos enviados pelas oficinas vinculadas às ocorrências aparecem aqui.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

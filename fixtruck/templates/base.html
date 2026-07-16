@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}FixTruck{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block head %}{% endblock %}
 </head>
@@ -14,17 +14,23 @@
 {% if 'empresa_id' in session %}
 <nav class="sidebar">
     <div class="sidebar-logo">
-        <span class="logo-icon">🚛</span>
-        <span class="logo-text">Fix<strong>Truck</strong></span>
+        <img src="{{ url_for('static', filename='img/logo-truck.svg') }}" alt="FixTruck" class="logo-icon">
+        <span class="logo-text">FIX<strong>TRUCK</strong></span>
     </div>
     <ul class="sidebar-nav">
         <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
             <span class="nav-icon">⊞</span> Dashboard
         </a></li>
-        <li><a href="{{ url_for('ocorrencias') }}" class="nav-link {% if 'ocorrencia' in request.endpoint %}active{% endif %}">
+        <li><a href="{{ url_for('ocorrencias') }}" class="nav-link {% if request.endpoint and 'ocorrencia' in request.endpoint %}active{% endif %}">
             <span class="nav-icon">⚠</span> Ocorrências
         </a></li>
-        <li><a href="{{ url_for('oficinas') }}" class="nav-link {% if 'oficina' in request.endpoint %}active{% endif %}">
+        <li><a href="{{ url_for('orcamentos') }}" class="nav-link {% if request.endpoint and 'orcamento' in request.endpoint %}active{% endif %}">
+            <span class="nav-icon">💵</span> Orçamentos
+        </a></li>
+        <li><a href="{{ url_for('frota') }}" class="nav-link {% if request.endpoint in ['frota','novo_motorista','novo_veiculo','vincular_motorista'] %}active{% endif %}">
+            <span class="nav-icon">🚚</span> Frota
+        </a></li>
+        <li><a href="{{ url_for('oficinas') }}" class="nav-link {% if request.endpoint and 'oficina' in request.endpoint %}active{% endif %}">
             <span class="nav-icon">🔧</span> Oficinas
         </a></li>
         <li><a href="{{ url_for('relatorios') }}" class="nav-link {% if request.endpoint == 'relatorios' %}active{% endif %}">

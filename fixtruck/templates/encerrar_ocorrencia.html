@@ -4,7 +4,7 @@
 <div class="page-header">
     <div>
         <h1>Encerrar Ocorrência #{{ ocorrencia.id }}</h1>
-        <p>Registre a resolução e a oficina utilizada</p>
+        <p>Altere o status da ocorrência ativa para <strong>resolvido</strong></p>
     </div>
     <a href="{{ url_for('ocorrencias') }}" class="btn btn-outline">← Voltar</a>
 </div>
@@ -54,7 +54,7 @@
                 <label>Observações (opcional)</label>
                 <textarea name="observacoes" placeholder="Descreva o que foi feito, peças trocadas, valor pago, etc..."></textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-full">✔ Confirmar Encerramento</button>
+            <button type="submit" class="btn btn-primary btn-full">Confirmar — status resolvido</button>
         </form>
     </div>
 </div>

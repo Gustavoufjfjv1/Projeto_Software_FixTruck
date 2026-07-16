@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Frota — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Frota</h1>
+        <p>Cadastre veículos e vincule motoristas específicos a cada um</p>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Novo motorista</span></div>
+        <form method="POST" action="{{ url_for('novo_motorista') }}">
+            <div class="form-group">
+                <label>Nome *</label>
+                <input type="text" name="nome" required placeholder="Nome completo">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>CNH</label>
+                    <input type="text" name="cnh" placeholder="Número da CNH">
+                </div>
+                <div class="form-group">
+                    <label>Telefone</label>
+                    <input type="text" name="telefone" placeholder="(11) 99999-9999">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Cadastrar motorista</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><span class="card-title">Novo veículo</span></div>
+        <form method="POST" action="{{ url_for('novo_veiculo') }}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Placa *</label>
+                    <input type="text" name="placa" required placeholder="ABC1D23" maxlength="7">
+                </div>
+                <div class="form-group">
+                    <label>Tipo *</label>
+                    <select name="tipo_veiculo" required>
+                        <option value="leve">Leve</option>
+                        <option value="médio">Médio</option>
+                        <option value="pesado" selected>Pesado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Marca</label>
+                    <input type="text" name="marca" placeholder="Mercedes, Volvo...">
+                </div>
+                <div class="form-group">
+                    <label>Modelo</label>
+                    <input type="text" name="modelo" placeholder="Actros 2651">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Vincular motorista</label>
+                <select name="motorista_id">
+                    <option value="">Sem motorista</option>
+                    {% for m in motoristas %}
+                    <option value="{{ m.id }}">{{ m.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Cadastrar veículo</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Veículos da frota</span></div>
+    {% if veiculos %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Placa</th>
+                    <th>Modelo</th>
+                    <th>Tipo</th>
+                    <th>Motorista vinculado</th>
+                    <th>Vincular / alterar</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for v in veiculos %}
+            <tr>
+                <td style="font-weight:700">{{ v.placa }}</td>
+                <td>{{ v.marca or '' }} {{ v.modelo or '—' }}</td>
+                <td><span class="badge badge-gray" style="text-transform:capitalize">{{ v.tipo_veiculo }}</span></td>
+                <td>{{ v.motorista_nome or '—' }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('vincular_motorista', veiculo_id=v.id) }}"
+                          style="display:flex;gap:8px;align-items:center">
+                        <select name="motorista_id" class="filter-select">
+                            <option value="">Sem motorista</option>
+                            {% for m in motoristas %}
+                            <option value="{{ m.id }}" {% if v.motorista_id == m.id %}selected{% endif %}>
+                                {{ m.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm">Vincular</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🚚</div>
+        <h3>Nenhum veículo cadastrado</h3>
+        <p>Cadastre o primeiro veículo da frota ao lado.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title">Motoristas</span></div>
+    {% if motoristas %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>CNH</th>
+                    <th>Telefone</th>
+                    <th>Veículo</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for m in motoristas %}
+            <tr>
+                <td style="font-weight:600">{{ m.nome }}</td>
+                <td>{{ m.cnh or '—' }}</td>
+                <td>{{ m.telefone or '—' }}</td>
+                <td>{{ m.veiculo_placa or '—' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <h3>Nenhum motorista cadastrado</h3>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
