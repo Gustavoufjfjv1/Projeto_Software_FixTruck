@@ -1,45 +1,90 @@
-{% extends "base.html" %}
-{% block title %}Cadastro — FixTruck{% endblock %}
-{% block body_class %}auth-page{% endblock %}
-{% block content %}
-<div class="auth-wrap">
-    <div class="auth-left">
-        <div class="auth-logo"><span>🚛</span>Fix<strong>Truck</strong></div>
-        <h1 class="auth-title">Cadastre-se</h1>
-        <p class="auth-sub">Crie sua conta gratuitamente</p>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta — FIXTRUCK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-shell">
+    <a href="{{ url_for('index') }}" class="auth-back">← Voltar ao início</a>
 
-        <form method="POST" action="{{ url_for('cadastro') }}">
-            <div class="form-group">
-                <label>Nome da empresa</label>
-                <input type="text" name="nome" placeholder="Ex: Transportadora Silva" required>
+    <div class="auth-layout">
+        <div class="auth-card">
+            <div class="auth-card-top">
+                <span class="brand-pill">
+                    <img src="{{ url_for('static', filename='img/logo-truck.svg') }}" alt="" class="brand-pill-icon">
+                    FIX<strong>TRUCK</strong>
+                </span>
             </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" placeholder="contato@empresa.com" required>
+            <div class="auth-card-body">
+                <h1>Criar Conta Gratuita</h1>
+                <p class="auth-card-sub">Comece a gerenciar ocorrências da sua frota hoje</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for cat, msg in messages %}
+                <div class="alert alert-{{ 'info' if cat == 'success' else 'warning' }}">{{ msg }}</div>
+                {% endfor %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('cadastro') }}">
+                    <div class="form-group">
+                        <label>Nome Completo / Empresa</label>
+                        <input type="text" name="nome" placeholder="Transportadora Silva" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" name="email" placeholder="contato@empresa.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade de caminhões</label>
+                        <input type="number" name="qtd_caminhoes" placeholder="Ex: 12" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Senha</label>
+                        <input type="password" name="senha" placeholder="Mínimo 6 caracteres" required minlength="6">
+                    </div>
+                    <label class="checkbox-label" style="margin-bottom:22px">
+                        <input type="checkbox" required>
+                        Li e aceito os Termos de uso e a Política de Privacidade
+                    </label>
+                    <button type="submit" class="btn btn-neon btn-full btn-lg">Criar Conta Gratuita <span>→</span></button>
+                </form>
+
+                <p class="auth-footer-text">
+                    Já possui conta? <a href="{{ url_for('login') }}">Fazer login</a>
+                </p>
             </div>
-            <div class="form-group">
-                <label>Quantidade de caminhões</label>
-                <input type="number" name="qtd_caminhoes" placeholder="Ex: 10" min="1">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="senha" placeholder="Mínimo 6 caracteres" required>
-            </div>
-            <label class="checkbox-label" style="margin-bottom:24px">
-                <input type="checkbox" required> I agree to the terms & policy
-            </label>
-            <button type="submit" class="btn btn-primary btn-full">Cadastrar</button>
-        </form>
-        <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--gray-400)">
-            Já tem conta? <a href="{{ url_for('login') }}" style="color:var(--green);font-weight:600">Entrar</a>
-        </p>
-    </div>
-    <div class="auth-right">
-        <div class="auth-tagline">
-            <span class="big-icon">🔧</span>
-            <h2>Junte-se ao FixTruck</h2>
-            <p>Mais de 500 oficinas cadastradas prontas para atender sua frota em qualquer rota.</p>
         </div>
+
+        <aside class="auth-aside">
+            <h2>Como Funciona</h2>
+            <ol class="auth-steps">
+                <li>
+                    <span class="step-num">1</span>
+                    <div>
+                        <strong>Crie sua conta grátis</strong>
+                        <p>Cadastre a transportadora e os dados básicos da frota.</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="step-num">2</span>
+                    <div>
+                        <strong>Vincule veículos e motoristas</strong>
+                        <p>Organize a frota e associe cada motorista ao veículo certo.</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="step-num">3</span>
+                    <div>
+                        <strong>Gerencie ocorrências e orçamentos</strong>
+                        <p>Acompanhe panes em rota, aprove orçamentos e encerre com status resolvido.</p>
+                    </div>
+                </li>
+            </ol>
+        </aside>
     </div>
-</div>
-{% endblock %}
+</body>
+</html>

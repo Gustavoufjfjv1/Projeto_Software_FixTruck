@@ -4,19 +4,35 @@
 <div class="page-header">
     <div>
         <h1>Rede de Oficinas</h1>
-        <p>{{ oficinas|length }} oficinas cadastradas na plataforma</p>
+        <p>Busque oficinas e filtre pelo raio de distância em quilômetros</p>
     </div>
 </div>
 
-<form method="GET" action="{{ url_for('oficinas') }}" style="margin-bottom:20px">
-    <div class="filters-bar">
-        <div class="search-input-wrap" style="max-width:400px">
+<form method="GET" action="{{ url_for('oficinas') }}" class="card" style="margin-bottom:20px;padding:16px 20px">
+    <div class="filters-bar" style="margin-bottom:0">
+        <div class="search-input-wrap" style="max-width:320px">
             <span class="search-icon">🔍</span>
-            <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar por nome ou tipo de serviço..."
+            <input type="text" name="busca" value="{{ busca }}" placeholder="Nome ou especialidade..."
                    style="padding-left:36px;width:100%;padding-top:9px;padding-bottom:9px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;outline:none">
         </div>
+        <select name="raio" class="filter-select">
+            <option value="">Raio (km)</option>
+            <option value="5" {% if raio == 5 %}selected{% endif %}>Até 5 km</option>
+            <option value="10" {% if raio == 10 %}selected{% endif %}>Até 10 km</option>
+            <option value="20" {% if raio == 20 %}selected{% endif %}>Até 20 km</option>
+            <option value="50" {% if raio == 50 %}selected{% endif %}>Até 50 km</option>
+            <option value="100" {% if raio == 100 %}selected{% endif %}>Até 100 km</option>
+        </select>
+        <input type="hidden" name="lat" id="lat" value="{{ lat or '' }}">
+        <input type="hidden" name="lon" id="lon" value="{{ lon or '' }}">
+        <button type="button" class="btn btn-outline btn-sm" onclick="usarGPS(this.form)">Usar GPS</button>
         <button type="submit" class="btn btn-primary">Buscar</button>
-        {% if busca %}<a href="{{ url_for('oficinas') }}" class="btn btn-outline">✕ Limpar</a>{% endif %}
+        {% if busca or raio %}
+        <a href="{{ url_for('oficinas') }}" class="btn btn-outline">✕ Limpar</a>
+        {% endif %}
+    </div>
+    <div id="gpsStatus" style="font-size:12px;color:var(--gray-400);margin-top:10px">
+        {% if lat and lon %}Referência GPS: {{ lat }}, {{ lon }}{% else %}Para filtrar por raio, use o GPS ou informe coordenadas.{% endif %}
     </div>
 </form>
 
@@ -26,7 +42,7 @@
 <div class="oficina-card">
     {% if of.tem_guincho %}
     <div style="position:absolute;top:14px;right:14px">
-        <span class="guincho-badge">🪝 Guincho</span>
+        <span class="guincho-badge">Guincho</span>
     </div>
     {% endif %}
 
@@ -44,6 +60,9 @@
     </div>
 
     <div class="oficina-meta">
+        {% if of.distancia is not none %}
+        <span>{{ of.distancia }} km</span>
+        {% endif %}
         <span>
             {% if of.aberta_agora %}
             <span style="color:var(--green);font-weight:600">● Aberta agora</span>
@@ -51,11 +70,11 @@
             <span style="color:var(--gray-400)">● Fechada</span>
             {% endif %}
         </span>
-        <span>⏰ {{ of.hora_abertura }}–{{ of.hora_fechamento }}</span>
+        <span>Horário: {{ of.hora_abertura }}–{{ of.hora_fechamento }}</span>
     </div>
 
     <div style="margin-top:8px;font-size:12px;color:var(--gray-500)">
-        🚛 Veículos: <strong>{{ of.tipos_veiculo }}</strong>
+        Veículos: <strong>{{ of.tipos_veiculo }}</strong>
     </div>
 
     <div class="oficina-actions">
@@ -63,7 +82,7 @@
         <form method="POST" action="{{ url_for('favoritar', oficina_id=of.id) }}">
             <input type="hidden" name="next" value="{{ request.url }}">
             <button type="submit" class="fav-btn {% if of.favoritada %}active{% endif %}" title="Favoritar">
-                {{ '⭐' if of.favoritada else '☆' }}
+                {{ '★' if of.favoritada else '☆' }}
             </button>
         </form>
     </div>
@@ -74,7 +93,26 @@
 <div class="empty-state">
     <div class="empty-icon">🔧</div>
     <h3>Nenhuma oficina encontrada</h3>
-    <p>Tente buscar por outro termo.</p>
+    <p>Ajuste a busca ou aumente o raio em quilômetros.</p>
 </div>
 {% endif %}
+
+<script>
+function usarGPS(form) {
+    const status = document.getElementById('gpsStatus');
+    status.textContent = 'Obtendo localização GPS...';
+    if (!navigator.geolocation) {
+        status.textContent = 'Geolocalização não suportada.';
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('lat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('lon').value = pos.coords.longitude.toFixed(6);
+        status.textContent = 'GPS capturado. Clique em Buscar para filtrar por raio.';
+        form.submit();
+    }, () => {
+        status.textContent = 'Não foi possível obter o GPS.';
+    });
+}
+</script>
 {% endblock %}

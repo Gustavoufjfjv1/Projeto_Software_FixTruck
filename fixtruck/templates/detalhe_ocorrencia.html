@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Ocorrência #{{ ocorrencia.id }} — FixTruck{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Ocorrência #{{ ocorrencia.id }}</h1>
+        <p>
+            {% if ocorrencia.status == 'aberta' %}
+            <span class="badge badge-red">Aberta</span>
+            {% elif ocorrencia.status == 'em_atendimento' %}
+            <span class="badge badge-orange">Em Atendimento</span>
+            {% else %}
+            <span class="badge badge-green">Resolvido</span>
+            {% endif %}
+        </p>
+    </div>
+    <div style="display:flex;gap:10px">
+        {% if ocorrencia.status != 'resolvido' %}
+        <a href="{{ url_for('buscar_oficinas', ocorrencia_id=ocorrencia.id) }}" class="btn btn-outline">Buscar oficinas</a>
+        <a href="{{ url_for('encerrar_ocorrencia', ocorrencia_id=ocorrencia.id) }}" class="btn btn-primary">Encerrar (resolvido)</a>
+        {% endif %}
+        <a href="{{ url_for('ocorrencias') }}" class="btn btn-outline">← Voltar</a>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <div>
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header"><span class="card-title">Dados da ocorrência</span></div>
+            <div class="info-row"><span class="info-label">Veículo</span><span class="info-value">{{ ocorrencia.veiculo_placa or ocorrencia.tipo_veiculo }}{% if ocorrencia.veiculo_modelo %} — {{ ocorrencia.veiculo_modelo }}{% endif %}</span></div>
+            <div class="info-row"><span class="info-label">Motorista</span><span class="info-value">{{ ocorrencia.motorista_nome or '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">{{ ocorrencia.tipo_problema }}</span></div>
+            <div class="info-row"><span class="info-label">Pane total</span><span class="info-value">{{ 'Sim' if ocorrencia.pane_total else 'Não' }}</span></div>
+            <div class="info-row"><span class="info-label">Localização GPS</span><span class="info-value" style="font-size:13px">
+                {% if ocorrencia.lat and ocorrencia.lon %}{{ ocorrencia.lat }}, {{ ocorrencia.lon }}{% else %}—{% endif %}
+            </span></div>
+            <div class="info-row"><span class="info-label">Oficina</span><span class="info-value">{{ ocorrencia.oficina_nome or '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Abertura</span><span class="info-value" style="font-size:13px">{{ ocorrencia.data_abertura[:16] if ocorrencia.data_abertura else '—' }}</span></div>
+            <div class="info-row"><span class="info-label">Encerramento</span><span class="info-value" style="font-size:13px">{{ ocorrencia.data_encerramento[:16] if ocorrencia.data_encerramento else '—' }}</span></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span class="card-title">Orçamentos da oficina</span></div>
+            {% if orcamentos %}
+            {% for o in orcamentos %}
+            <div style="border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                    <div>
+                        <strong>{{ o.oficina_nome }}</strong>
+                        <div style="font-size:13px;color:var(--gray-600);margin-top:4px">{{ o.descricao or 'Sem descrição' }}</div>
+                    </div>
+                    {% if o.status == 'pendente' %}
+                    <span class="badge badge-orange">Pendente</span>
+                    {% elif o.status == 'aprovado' %}
+                    <span class="badge badge-green">Aprovado</span>
+                    {% else %}
+                    <span class="badge badge-red">Rejeitado</span>
+                    {% endif %}
+                </div>
+                <div style="display:flex;gap:20px;font-size:13px;color:var(--gray-600);margin-bottom:12px">
+                    <span>Peças: R$ {{ '%.2f'|format(o.valor_pecas) }}</span>
+                    <span>Mão de obra: R$ {{ '%.2f'|format(o.valor_mao_obra) }}</span>
+                    <span style="font-weight:700;color:var(--gray-900)">Total: R$ {{ '%.2f'|format(o.total) }}</span>
+                </div>
+                {% if o.status == 'pendente' %}
+                <div style="display:flex;gap:8px">
+                    <form method="POST" action="{{ url_for('decidir_orcamento', orcamento_id=o.id) }}">
+                        <input type="hidden" name="decisao" value="aprovar">
+                        <button type="submit" class="btn btn-primary btn-sm">Aprovar digitalmente</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('decidir_orcamento', orcamento_id=o.id) }}">
+                        <input type="hidden" name="decisao" value="rejeitar">
+                        <button type="submit" class="btn btn-danger btn-sm">Rejeitar</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="color:var(--gray-400);font-size:14px">Nenhum orçamento enviado ainda.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if ocorrencia.status != 'resolvido' %}
+    <div class="card">
+        <div class="card-header"><span class="card-title">Simular orçamento da oficina</span></div>
+        <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">
+            Registra um orçamento enviado pela oficina vinculada à ocorrência para o gestor aprovar ou rejeitar.
+        </p>
+        <form method="POST" action="{{ url_for('enviar_orcamento') }}">
+            <input type="hidden" name="ocorrencia_id" value="{{ ocorrencia.id }}">
+            <div class="form-group">
+                <label>Oficina *</label>
+                <select name="oficina_id" required>
+                    <option value="">Selecione...</option>
+                    {% for of in oficinas %}
+                    <option value="{{ of.id }}" {% if ocorrencia.oficina_id == of.id %}selected{% endif %}>{{ of.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Valor peças (R$)</label>
+                <input type="number" name="valor_pecas" step="0.01" min="0" value="0" required>
+            </div>
+            <div class="form-group">
+                <label>Valor mão de obra (R$)</label>
+                <input type="number" name="valor_mao_obra" step="0.01" min="0" value="0" required>
+            </div>
+            <div class="form-group">
+                <label>Descrição</label>
+                <textarea name="descricao" placeholder="Serviços e peças previstos..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Enviar orçamento</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
