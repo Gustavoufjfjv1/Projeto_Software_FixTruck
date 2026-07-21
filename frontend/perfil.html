@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page-header">
+    <div>
+        <h1>Perfil da Empresa</h1>
+        <p>Gerencie seus dados de conta</p>
+    </div>
+</div>
+
+<div style="max-width:560px" id="perfil-root"></div>
+
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('perfil');
+
+async function load() {
+    try {
+        const data = await Api.get('/api/perfil');
+        const empresa = data.empresa || {};
+        const inicial = (empresa.nome || 'E').charAt(0).toUpperCase();
+        const membroDesde = empresa.criado_em ? String(empresa.criado_em).slice(0, 10) : '—';
+
+        document.getElementById('perfil-root').innerHTML = `
+            <div class="card">
+                <div class="card-header"><span class="card-title">Minha Conta</span></div>
+                <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--gray-50);border-radius:var(--radius-sm);margin-bottom:24px">
+                    <div style="width:52px;height:52px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-family:'Syne',sans-serif;font-weight:800">
+                        ${inicial}
+                    </div>
+                    <div>
+                        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px">${empresa.nome || ''}</div>
+                        <div style="font-size:13px;color:var(--gray-500)">${empresa.email || ''}</div>
+                    </div>
+                </div>
+                <form id="perfilForm">
+                    <div class="form-group">
+                        <label>Nome da Empresa</label>
+                        <input type="text" name="nome" id="nome" value="${empresa.nome || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" value="${empresa.email || ''}" disabled style="background:var(--gray-100);color:var(--gray-400)">
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade de Caminhões</label>
+                        <input type="number" name="qtd_caminhoes" id="qtd_caminhoes" value="${empresa.qtd_caminhoes ?? 0}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>País</label>
+                        <input type="text" value="BRA" disabled style="background:var(--gray-100);color:var(--gray-400)">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Salvar mudanças</button>
+                </form>
+            </div>
+
+            <div class="card" style="margin-top:16px">
+                <div class="card-header"><span class="card-title">Configurações</span></div>
+                <div class="info-row">
+                    <span class="info-label">Notificações</span>
+                    <span class="info-value"><span class="badge badge-green">Ativas</span></span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Membro desde</span>
+                    <span class="info-value" style="font-size:13px">${membroDesde}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Plano</span>
+                    <span class="info-value"><span class="badge badge-blue">MVP Free</span></span>
+                </div>
+                <div style="margin-top:16px">
+                    <a href="#" id="logoutBtn" class="btn btn-outline" style="color:var(--red);border-color:var(--red)">↩ Sair da conta</a>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('perfilForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const res = await Api.put('/api/perfil', {
+                    nome: document.getElementById('nome').value,
+                    qtd_caminhoes: Number(document.getElementById('qtd_caminhoes').value) || 0,
+                });
+                if (res.token) Api.setSession(res.token, res.empresa);
+                showFlash(res.mensagem || 'Dados atualizados.', 'success');
+                load();
+            } catch (err) {
+                showFlash(err.message, 'error');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Api.clearSession();
+            window.location.href = 'index.html';
+        });
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+}
+
+load();
+</script>
+</body>
+</html>

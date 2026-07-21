@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta — FIXTRUCK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-shell">
+    <a href="index.html" class="auth-back">← Voltar ao início</a>
+
+    <div class="auth-layout">
+        <div class="auth-card">
+            <div class="auth-card-top">
+                <span class="brand-pill">
+                    <img src="img/logo-truck.svg" alt="" class="brand-pill-icon">
+                    FIX<strong>TRUCK</strong>
+                </span>
+            </div>
+            <div class="auth-card-body">
+                <h1>Criar Conta Gratuita</h1>
+                <p class="auth-card-sub">Comece a gerenciar ocorrências da sua frota hoje</p>
+
+                <div id="alert-box"></div>
+
+                <form id="cadastroForm">
+                    <div class="form-group">
+                        <label>Nome Completo / Empresa</label>
+                        <input type="text" name="nome" id="nome" placeholder="Transportadora Silva" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" name="email" id="email" placeholder="contato@empresa.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade de caminhões</label>
+                        <input type="number" name="qtd_caminhoes" id="qtd_caminhoes" placeholder="Ex: 12" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Senha</label>
+                        <input type="password" name="senha" id="senha" placeholder="Mínimo 6 caracteres" required minlength="6">
+                    </div>
+                    <label class="checkbox-label" style="margin-bottom:22px">
+                        <input type="checkbox" required>
+                        Li e aceito os Termos de uso e a Política de Privacidade
+                    </label>
+                    <button type="submit" class="btn btn-neon btn-full btn-lg">Criar Conta Gratuita <span>→</span></button>
+                </form>
+
+                <p class="auth-footer-text">
+                    Já possui conta? <a href="login.html">Fazer login</a>
+                </p>
+            </div>
+        </div>
+
+        <aside class="auth-aside">
+            <h2>Como Funciona</h2>
+            <ol class="auth-steps">
+                <li>
+                    <span class="step-num">1</span>
+                    <div>
+                        <strong>Crie sua conta grátis</strong>
+                        <p>Cadastre a transportadora e os dados básicos da frota.</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="step-num">2</span>
+                    <div>
+                        <strong>Vincule veículos e motoristas</strong>
+                        <p>Organize a frota e associe cada motorista ao veículo certo.</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="step-num">3</span>
+                    <div>
+                        <strong>Gerencie ocorrências e orçamentos</strong>
+                        <p>Acompanhe panes em rota, aprove orçamentos e encerre com status resolvido.</p>
+                    </div>
+                </li>
+            </ol>
+        </aside>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+    if (Api.isAuthenticated()) {
+        window.location.href = 'dashboard.html';
+    }
+
+    document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertBox = document.getElementById('alert-box');
+        alertBox.innerHTML = '';
+        try {
+            await Api.post('/api/auth/cadastro', {
+                nome: document.getElementById('nome').value,
+                email: document.getElementById('email').value,
+                senha: document.getElementById('senha').value,
+                qtd_caminhoes: Number(document.getElementById('qtd_caminhoes').value) || 0,
+            });
+            window.location.href = 'login.html';
+        } catch (err) {
+            alertBox.innerHTML = `<div class="alert alert-warning">${err.message}</div>`;
+        }
+    });
+    </script>
+</body>
+</html>

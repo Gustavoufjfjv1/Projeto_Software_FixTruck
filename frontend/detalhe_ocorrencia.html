@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocorrência — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="page-root"></div>
+
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('ocorrencias');
+
+const id = qs('id');
+if (!id) {
+    window.location.href = 'ocorrencias.html';
+    throw new Error('id');
+}
+
+function money(v) {
+    return Number(v || 0).toFixed(2);
+}
+
+function orcStatusBadge(status) {
+    if (status === 'pendente') return '<span class="badge badge-orange">Pendente</span>';
+    if (status === 'aprovado') return '<span class="badge badge-green">Aprovado</span>';
+    return '<span class="badge badge-red">Rejeitado</span>';
+}
+
+async function decidir(orcamentoId, decisao) {
+    try {
+        const data = await Api.post(`/api/orcamentos/${orcamentoId}/decidir`, { decisao });
+        showFlash(data.mensagem || 'Decisão registrada.', 'success');
+        load();
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+}
+
+async function load() {
+    try {
+        const data = await Api.get(`/api/ocorrencias/${id}`);
+        const oc = data.ocorrencia;
+        const orcamentos = data.orcamentos || [];
+        const oficinas = data.oficinas || [];
+
+        document.title = `Ocorrência #${oc.id} — FixTruck`;
+
+        const headerActions = oc.status !== 'resolvido'
+            ? `<a href="buscar_oficinas.html?id=${oc.id}" class="btn btn-outline">Buscar oficinas</a>
+               <a href="encerrar_ocorrencia.html?id=${oc.id}" class="btn btn-primary">Encerrar (resolvido)</a>`
+            : '';
+
+        const orcHtml = orcamentos.length
+            ? orcamentos.map(o => `
+                <div style="border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                        <div>
+                            <strong>${o.oficina_nome || '—'}</strong>
+                            <div style="font-size:13px;color:var(--gray-600);margin-top:4px">${o.descricao || 'Sem descrição'}</div>
+                        </div>
+                        ${orcStatusBadge(o.status)}
+                    </div>
+                    <div style="display:flex;gap:20px;font-size:13px;color:var(--gray-600);margin-bottom:12px">
+                        <span>Peças: R$ ${money(o.valor_pecas)}</span>
+                        <span>Mão de obra: R$ ${money(o.valor_mao_obra)}</span>
+                        <span style="font-weight:700;color:var(--gray-900)">Total: R$ ${money(o.total)}</span>
+                    </div>
+                    ${o.status === 'pendente' ? `
+                    <div style="display:flex;gap:8px">
+                        <button type="button" class="btn btn-primary btn-sm" data-aprovar="${o.id}">Aprovar digitalmente</button>
+                        <button type="button" class="btn btn-danger btn-sm" data-rejeitar="${o.id}">Rejeitar</button>
+                    </div>` : ''}
+                </div>
+            `).join('')
+            : '<p style="color:var(--gray-400);font-size:14px">Nenhum orçamento enviado ainda.</p>';
+
+        const formOrc = oc.status !== 'resolvido' ? `
+            <div class="card">
+                <div class="card-header"><span class="card-title">Simular orçamento da oficina</span></div>
+                <p style="font-size:13px;color:var(--gray-600);margin-bottom:16px">
+                    Registra um orçamento enviado pela oficina vinculada à ocorrência para o gestor aprovar ou rejeitar.
+                </p>
+                <form id="orcForm">
+                    <div class="form-group">
+                        <label>Oficina *</label>
+                        <select name="oficina_id" id="oficina_id" required>
+                            <option value="">Selecione...</option>
+                            ${oficinas.map(of =>
+                                `<option value="${of.id}" ${oc.oficina_id == of.id ? 'selected' : ''}>${of.nome}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor peças (R$)</label>
+                        <input type="number" name="valor_pecas" id="valor_pecas" step="0.01" min="0" value="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor mão de obra (R$)</label>
+                        <input type="number" name="valor_mao_obra" id="valor_mao_obra" step="0.01" min="0" value="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <textarea name="descricao" id="descricao" placeholder="Serviços e peças previstos..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Enviar orçamento</button>
+                </form>
+            </div>
+        ` : '';
+
+        document.getElementById('page-root').innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1>Ocorrência #${oc.id}</h1>
+                    <p>${statusBadge(oc.status)}</p>
+                </div>
+                <div style="display:flex;gap:10px">
+                    ${headerActions}
+                    <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
+                </div>
+            </div>
+
+            <div class="detail-grid">
+                <div>
+                    <div class="card" style="margin-bottom:20px">
+                        <div class="card-header"><span class="card-title">Dados da ocorrência</span></div>
+                        <div class="info-row"><span class="info-label">Veículo</span><span class="info-value">${oc.veiculo_placa || oc.tipo_veiculo || '—'}${oc.veiculo_modelo ? ' — ' + oc.veiculo_modelo : ''}</span></div>
+                        <div class="info-row"><span class="info-label">Motorista</span><span class="info-value">${oc.motorista_nome || '—'}</span></div>
+                        <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">${oc.tipo_problema || '—'}</span></div>
+                        <div class="info-row"><span class="info-label">Pane total</span><span class="info-value">${oc.pane_total ? 'Sim' : 'Não'}</span></div>
+                        <div class="info-row"><span class="info-label">Localização GPS</span><span class="info-value" style="font-size:13px">${oc.lat && oc.lon ? oc.lat + ', ' + oc.lon : '—'}</span></div>
+                        <div class="info-row"><span class="info-label">Oficina</span><span class="info-value">${oc.oficina_nome || '—'}</span></div>
+                        <div class="info-row"><span class="info-label">Abertura</span><span class="info-value" style="font-size:13px">${formatDate(oc.data_abertura)}</span></div>
+                        <div class="info-row"><span class="info-label">Encerramento</span><span class="info-value" style="font-size:13px">${formatDate(oc.data_encerramento)}</span></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Orçamentos da oficina</span></div>
+                        ${orcHtml}
+                    </div>
+                </div>
+                ${formOrc}
+            </div>
+        `;
+
+        document.querySelectorAll('[data-aprovar]').forEach(btn => {
+            btn.addEventListener('click', () => decidir(btn.dataset.aprovar, 'aprovar'));
+        });
+        document.querySelectorAll('[data-rejeitar]').forEach(btn => {
+            btn.addEventListener('click', () => decidir(btn.dataset.rejeitar, 'rejeitar'));
+        });
+
+        const orcForm = document.getElementById('orcForm');
+        if (orcForm) {
+            orcForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const res = await Api.post('/api/orcamentos', {
+                        ocorrencia_id: Number(id),
+                        oficina_id: Number(document.getElementById('oficina_id').value),
+                        valor_pecas: Number(document.getElementById('valor_pecas').value) || 0,
+                        valor_mao_obra: Number(document.getElementById('valor_mao_obra').value) || 0,
+                        descricao: document.getElementById('descricao').value,
+                    });
+                    showFlash(res.mensagem || 'Orçamento enviado.', 'success');
+                    load();
+                } catch (err) {
+                    showFlash(err.message, 'error');
+                }
+            });
+        }
+    } catch (err) {
+        showFlash(err.message, 'error');
+        document.getElementById('page-root').innerHTML = `
+            <div class="page-header">
+                <div><h1>Ocorrência</h1><p>Não foi possível carregar.</p></div>
+                <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
+            </div>
+        `;
+    }
+}
+
+load();
+</script>
+</body>
+</html>

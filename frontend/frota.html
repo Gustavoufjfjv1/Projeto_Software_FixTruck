@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frota — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="page-header">
+    <div>
+        <h1>Frota</h1>
+        <p>Cadastre veículos e vincule motoristas específicos a cada um</p>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+    <div class="card">
+        <div class="card-header"><span class="card-title">Novo motorista</span></div>
+        <form id="formMotorista">
+            <div class="form-group">
+                <label>Nome *</label>
+                <input type="text" name="nome" id="mot_nome" required placeholder="Nome completo">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>CNH</label>
+                    <input type="text" name="cnh" id="mot_cnh" placeholder="Número da CNH">
+                </div>
+                <div class="form-group">
+                    <label>Telefone</label>
+                    <input type="text" name="telefone" id="mot_telefone" placeholder="(11) 99999-9999">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Cadastrar motorista</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><span class="card-title">Novo veículo</span></div>
+        <form id="formVeiculo">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Placa *</label>
+                    <input type="text" name="placa" id="vei_placa" required placeholder="ABC1D23" maxlength="7">
+                </div>
+                <div class="form-group">
+                    <label>Tipo *</label>
+                    <select name="tipo_veiculo" id="vei_tipo" required>
+                        <option value="leve">Leve</option>
+                        <option value="médio">Médio</option>
+                        <option value="pesado" selected>Pesado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Marca</label>
+                    <input type="text" name="marca" id="vei_marca" placeholder="Mercedes, Volvo...">
+                </div>
+                <div class="form-group">
+                    <label>Modelo</label>
+                    <input type="text" name="modelo" id="vei_modelo" placeholder="Actros 2651">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Vincular motorista</label>
+                <select name="motorista_id" id="vei_motorista">
+                    <option value="">Sem motorista</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Cadastrar veículo</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Veículos da frota</span></div>
+    <div id="veiculos-container"></div>
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title">Motoristas</span></div>
+    <div id="motoristas-container"></div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('frota');
+
+function optionsMotoristas(motoristas, selectedId) {
+    return '<option value="">Sem motorista</option>' +
+        motoristas.map(m =>
+            `<option value="${m.id}" ${String(selectedId) === String(m.id) ? 'selected' : ''}>${m.nome}</option>`
+        ).join('');
+}
+
+async function load() {
+    try {
+        const data = await Api.get('/api/frota');
+        const veiculos = data.veiculos || [];
+        const motoristas = data.motoristas || [];
+
+        document.getElementById('vei_motorista').innerHTML = optionsMotoristas(motoristas);
+
+        const veiEl = document.getElementById('veiculos-container');
+        if (veiculos.length) {
+            veiEl.innerHTML = `
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Placa</th>
+                                <th>Modelo</th>
+                                <th>Tipo</th>
+                                <th>Motorista vinculado</th>
+                                <th>Vincular / alterar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        ${veiculos.map(v => `
+                            <tr>
+                                <td style="font-weight:700">${v.placa}</td>
+                                <td>${(v.marca || '') + ' ' + (v.modelo || '—')}</td>
+                                <td><span class="badge badge-gray" style="text-transform:capitalize">${v.tipo_veiculo || '—'}</span></td>
+                                <td>${v.motorista_nome || '—'}</td>
+                                <td>
+                                    <form class="vincular-form" data-veiculo="${v.id}" style="display:flex;gap:8px;align-items:center">
+                                        <select name="motorista_id" class="filter-select">
+                                            ${optionsMotoristas(motoristas, v.motorista_id)}
+                                        </select>
+                                        <button type="submit" class="btn btn-primary btn-sm">Vincular</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            veiEl.querySelectorAll('.vincular-form').forEach(form => {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const veiculoId = form.dataset.veiculo;
+                    const motoristaId = form.querySelector('select').value;
+                    try {
+                        const res = await Api.post(`/api/frota/veiculos/${veiculoId}/vincular`, {
+                            motorista_id: motoristaId ? Number(motoristaId) : null,
+                        });
+                        showFlash(res.mensagem || 'Motorista vinculado.', 'success');
+                        load();
+                    } catch (err) {
+                        showFlash(err.message, 'error');
+                    }
+                });
+            });
+        } else {
+            veiEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🚚</div>
+                    <h3>Nenhum veículo cadastrado</h3>
+                    <p>Cadastre o primeiro veículo da frota ao lado.</p>
+                </div>
+            `;
+        }
+
+        const motEl = document.getElementById('motoristas-container');
+        if (motoristas.length) {
+            motEl.innerHTML = `
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CNH</th>
+                                <th>Telefone</th>
+                                <th>Veículo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        ${motoristas.map(m => `
+                            <tr>
+                                <td style="font-weight:600">${m.nome}</td>
+                                <td>${m.cnh || '—'}</td>
+                                <td>${m.telefone || '—'}</td>
+                                <td>${m.veiculo_placa || '—'}</td>
+                            </tr>
+                        `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            motEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">👤</div>
+                    <h3>Nenhum motorista cadastrado</h3>
+                </div>
+            `;
+        }
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+}
+
+document.getElementById('formMotorista').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+        const res = await Api.post('/api/frota/motoristas', {
+            nome: document.getElementById('mot_nome').value,
+            cnh: document.getElementById('mot_cnh').value,
+            telefone: document.getElementById('mot_telefone').value,
+        });
+        showFlash(res.mensagem || 'Motorista cadastrado.', 'success');
+        e.target.reset();
+        load();
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+});
+
+document.getElementById('formVeiculo').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const mid = document.getElementById('vei_motorista').value;
+    try {
+        const res = await Api.post('/api/frota/veiculos', {
+            placa: document.getElementById('vei_placa').value,
+            modelo: document.getElementById('vei_modelo').value,
+            marca: document.getElementById('vei_marca').value,
+            tipo_veiculo: document.getElementById('vei_tipo').value,
+            motorista_id: mid ? Number(mid) : null,
+        });
+        showFlash(res.mensagem || 'Veículo cadastrado.', 'success');
+        e.target.reset();
+        document.getElementById('vei_tipo').value = 'pesado';
+        load();
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+});
+
+load();
+</script>
+</body>
+</html>
