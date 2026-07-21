@@ -8,5 +8,7 @@ class Veiculo(ModeloBase):
     placa = db.Column(db.String(7), nullable=False)
     modelo = db.Column(db.String(100), nullable=False)
     marca = db.Column(db.String(100), nullable=False)
-    motorista_id = db.Column(db.Integer, db.ForeignKey("motoristas.id"), nullable=False)
+    motorista_id = db.Column(db.Integer, db.ForeignKey("motoristas.id"), nullable=True)
     motorista = db.relationship("Motorista", back_populates="veiculos")
+    ocorrencias = db.relationship("Ocorrencia", back_populates="veiculo")
+

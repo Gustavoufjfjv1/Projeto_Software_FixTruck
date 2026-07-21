@@ -1,6 +1,6 @@
 # Projeto_Software_FixTruck
 
-## Integrantes:
+## Integrantes
 
 - Arthur Cezar
 - Caio Luis
@@ -9,62 +9,94 @@
 - Mateus Torres
 - Pedro Lima
 
-## Stack utilizada:
-### Front-end:
+## Stack utilizada
+
+### Front-end
 - HTML
 - CSS
-- Javascript
+- JavaScript
 
-### Back-end:
-- Python
+### Back-end
+- Python (Flask) — API REST JSON
 
-### Banco de dados:
-- Flask SQLAlchemy
+### Banco de dados
+- SQLite
 
-## Descrição:
+## Descrição
+
 O FixTruck é um sistema de gestão de ocorrências mecânicas projetado especificamente para transportadoras e frotas de transporte rodoviário. O objetivo principal da solução é reduzir o downtime quando ocorre uma pane em rota. A plataforma conecta motoristas e gestores a oficinas mecânicas próximas através de geolocalização e filtros baseados na especialidade técnica.
 
-## Como Utilizar:
+## Estrutura do projeto
 
-Para o projeto funcionar, você precisa do Python no seu computador:
-1. Baixe a versão mais recente em [python.org/downloads](https://www.python.org/downloads/).
-2. Abra o instalador e **MARQUE** a caixinha escrito **"Add Python.exe to PATH"** (isso é muito importante!).
-3. Clique em **"Install Now"** e avance até o final.
-
-### 1. Baixar o projeto
-Abra o seu terminal (PowerShell) e clone o repositório:
-```powershell
-git clone https://github.com/Gustavoufjfjv1/Projeto_Software_FixTruck
+```text
+fixtruck/
+├── backend/     # API Flask (JSON)
+│   ├── app.py
+│   ├── database.py
+│   ├── controllers/
+│   └── fixtruck.db
+└── frontend/    # Interface que consome a API
+    ├── *.html
+    ├── css/
+    ├── js/
+    └── img/
 ```
 
-Agora, entre na pasta do projeto:
+O frontend e o backend rodam em processos separados. O frontend chama os endpoints em `http://127.0.0.1:5000/api/...`.
+
+## Como utilizar
+
+### 1. Pré-requisitos
+
+- Python 3 instalado ([python.org/downloads](https://www.python.org/downloads/))
+- Marque a opção **"Add Python to PATH"** no instalador do Windows
+
+### 2. Baixar o projeto
+
 ```powershell
+git clone https://github.com/Gustavoufjfjv1/Projeto_Software_FixTruck
 cd Projeto_Software_FixTruck
 ```
 
-### 2. Iniciar o Ambiente Virtual (venv)
-Crie e ative o ambiente virtual para isolar as ferramentas:
+### 3. Ambiente virtual e dependências
+
 ```powershell
 python -m venv venv
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 .\venv\Scripts\Activate.ps1
-```
-
-### 3. Baixar os Requirements
-Instale todas as ferramentas e pacotes necessários para o projeto:
-```powershell
 pip install -r requirements.txt
 ```
 
-### 4. Executar o Projeto
-Ligue o servidor do Flask com o comando:
-```powershell
-flask run
+No Linux/macOS:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### 5. Acessar o Site
-Após o comando acima, o terminal vai carregar o projeto. Abra o seu navegador de internet (como Chrome ou Edge) e pesquise pelo link abaixo na barra de endereços:
-```text
-http://127.0.0.1:5000
+### 4. Subir a API (backend)
+
+Em um terminal, na pasta do projeto:
+
+```powershell
+cd backend
+python app.py
 ```
-Deixe a janela do terminal aberta enquanto estiver usando o site.
+
+A API ficará em: `http://127.0.0.1:5000`
+
+### 5. Subir o frontend
+
+Em **outro** terminal:
+
+```powershell
+cd frontend
+python -m http.server 8080
+```
+
+Abra no navegador: `http://127.0.0.1:8080`
+
+### Conta demo
+
+- E-mail: `demo@fixtruck.com`
+- Senha: `123456`

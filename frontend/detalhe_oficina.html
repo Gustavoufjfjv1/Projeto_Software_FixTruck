@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oficina — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="page-root"></div>
+
+<script src="js/api.js"></script>
+<script src="js/layout.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('oficinas');
+
+const id = qs('id');
+if (!id) {
+    window.location.href = 'oficinas.html';
+    throw new Error('id');
+}
+
+function tagsEsp(especialidades) {
+    return (especialidades || '').split(',').map(esp => {
+        const t = esp.trim();
+        return t ? `<span class="oficina-tag">${t}</span>` : '';
+    }).join('');
+}
+
+function badgesVeiculo(tipos) {
+    return (tipos || '').split(',').map(v => {
+        const t = v.trim();
+        if (!t) return '';
+        const cls = t === 'pesado' ? 'badge-gray' : (t === 'médio' ? 'badge-orange' : 'badge-blue');
+        return `<span class="badge ${cls}">${t}</span>`;
+    }).join('');
+}
+
+async function favoritar() {
+    try {
+        const data = await Api.post(`/api/oficinas/${id}/favoritar`);
+        showFlash(data.mensagem || 'Favorito atualizado.', 'success');
+        load();
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+}
+
+async function load() {
+    try {
+        const data = await Api.get(`/api/oficinas/${id}`);
+        const of = data.oficina;
+        const favoritada = data.favoritada;
+        const aberta = data.aberta_agora;
+
+        document.title = `${of.nome} — FixTruck`;
+
+        const lat = Number(of.lat);
+        const lon = Number(of.lon);
+        const mapHtml = (of.lat && of.lon) ? `
+            <div style="margin-top:20px">
+                <div class="map-container">
+                    <iframe
+                        src="https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.01},${lat - 0.01},${lon + 0.01},${lat + 0.01}&layer=mapnik&marker=${lat},${lon}"
+                        width="100%" height="280" style="border:0" loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+        ` : '';
+
+        document.getElementById('page-root').innerHTML = `
+            <div class="page-header">
+                <div>
+                    <h1>${of.nome}</h1>
+                    <p>Detalhes da oficina</p>
+                </div>
+                <div style="display:flex;gap:10px">
+                    <button type="button" class="btn btn-outline" id="favBtn">
+                        ${favoritada ? '⭐ Favoritada' : '☆ Favoritar'}
+                    </button>
+                    <a href="oficinas.html" class="btn btn-outline">← Voltar</a>
+                </div>
+            </div>
+
+            <div class="detail-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Informações</span>
+                        <span>
+                            ${aberta
+                                ? '<span class="badge badge-green">● Aberta agora</span>'
+                                : '<span class="badge badge-gray">● Fechada</span>'}
+                        </span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="info-label">Endereço</span>
+                        <span class="info-value">${of.endereco || '—'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Telefone</span>
+                        <span class="info-value">${of.telefone || '—'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Horário de funcionamento</span>
+                        <span class="info-value">${of.hora_abertura || ''} às ${of.hora_fechamento || ''}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Guincho disponível</span>
+                        <span class="info-value">${of.tem_guincho ? '🪝 Sim' : '❌ Não'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Especialidades</span>
+                        <span class="info-value">
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end">
+                            ${tagsEsp(of.especialidades)}
+                            </div>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Atende veículos</span>
+                        <span class="info-value">
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end">
+                            ${badgesVeiculo(of.tipos_veiculo)}
+                            </div>
+                        </span>
+                    </div>
+                    ${mapHtml}
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:16px">
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Ação Rápida</span></div>
+                        <a href="nova_ocorrencia.html" class="btn btn-primary btn-full" style="margin-bottom:10px">
+                            ⚠ Abrir Ocorrência
+                        </a>
+                        ${of.telefone ? `<a href="tel:${of.telefone}" class="btn btn-outline btn-full">📞 Ligar para Oficina</a>` : ''}
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><span class="card-title">Cobertura</span></div>
+                        <div style="display:flex;flex-direction:column;gap:10px">
+                            <div>
+                                <div style="font-size:12px;font-weight:600;color:var(--gray-400);margin-bottom:6px">ESPECIALIDADES</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:6px">${tagsEsp(of.especialidades)}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;font-weight:600;color:var(--gray-400);margin-bottom:6px">TIPOS DE VEÍCULO</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:6px">${badgesVeiculo(of.tipos_veiculo)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('favBtn').addEventListener('click', favoritar);
+    } catch (err) {
+        showFlash(err.message, 'error');
+        document.getElementById('page-root').innerHTML = `
+            <div class="page-header">
+                <div><h1>Oficina</h1></div>
+                <a href="oficinas.html" class="btn btn-outline">← Voltar</a>
+            </div>
+        `;
+    }
+}
+
+load();
+</script>
+</body>
+</html>
