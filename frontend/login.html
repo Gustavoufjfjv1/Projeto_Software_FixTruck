@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Entrar — FIXTRUCK</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="auth-shell">
-    <a href="index.html" class="auth-back">← Voltar ao início</a>
+    <a href="index.html" class="auth-back"><span data-icon="arrowLeft" data-size="16"></span> Voltar ao início</a>
 
     <div class="auth-layout">
         <div class="auth-card">
@@ -50,7 +50,7 @@
                         </label>
                         <a href="#" class="auth-link">Esqueceu a senha?</a>
                     </div>
-                    <button type="submit" class="btn btn-neon btn-full btn-lg">Entrar <span>→</span></button>
+                    <button type="submit" class="btn btn-neon btn-full btn-lg">Entrar <span class="icon-end" data-icon="arrowRight" data-size="18"></span></button>
                 </form>
 
                 <button type="button" class="btn btn-soft btn-full" style="margin-top:12px" id="demoBtn">Usar conta demo</button>
@@ -96,6 +96,7 @@
     </div>
 
     <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
     <script>
     if (Api.isAuthenticated()) {
         window.location.href = 'dashboard.html';

@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Encerrar Ocorrência — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="page-root"></div>
 
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
@@ -37,7 +38,7 @@ if (!id) {
                     <h1>Encerrar Ocorrência #${oc.id}</h1>
                     <p>Altere o status da ocorrência ativa para <strong>resolvido</strong></p>
                 </div>
-                <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
+                <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px">
@@ -54,7 +55,7 @@ if (!id) {
                     <div class="card-header"><span class="card-title">Registro de Encerramento</span></div>
 
                     <div class="alert alert-warning" style="margin-bottom:16px">
-                        ⚠ Selecionar uma oficina é <strong>obrigatório</strong> para encerrar a ocorrência.
+                        ${Icons.alert(16)} Selecionar uma oficina é <strong>obrigatório</strong> para encerrar a ocorrência.
                     </div>
 
                     <form id="encerrarForm">
@@ -90,6 +91,7 @@ if (!id) {
             </div>
         `;
 
+        hydrateIcons();
         document.getElementById('encerrarForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
@@ -109,7 +111,7 @@ if (!id) {
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
                 <div><h1>Encerrar Ocorrência</h1></div>
-                <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
+                <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
             </div>
         `;
     }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oficinas — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -19,7 +19,7 @@
 <form id="buscaForm" class="card" style="margin-bottom:20px;padding:16px 20px">
     <div class="filters-bar" style="margin-bottom:0">
         <div class="search-input-wrap" style="max-width:320px">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon" data-icon="search"></span>
             <input type="text" name="busca" id="busca" placeholder="Nome ou especialidade..."
                    style="padding-left:36px;width:100%;padding-top:9px;padding-bottom:9px;border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);font-size:14px;outline:none">
         </div>
@@ -35,7 +35,7 @@
         <input type="hidden" name="lon" id="lon">
         <button type="button" class="btn btn-outline btn-sm" id="gpsBtn">Usar GPS</button>
         <button type="submit" class="btn btn-primary">Buscar</button>
-        <a href="oficinas.html" id="btn-limpar" class="btn btn-outline" style="display:none">✕ Limpar</a>
+        <a href="oficinas.html" id="btn-limpar" class="btn btn-outline" style="display:none"><span data-icon="x" data-size="16"></span> Limpar</a>
     </div>
     <div id="gpsStatus" style="font-size:12px;color:var(--gray-400);margin-top:10px">
         Para filtrar por raio, use o GPS ou informe coordenadas.
@@ -45,6 +45,7 @@
 <div id="lista-container"></div>
 
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
@@ -129,7 +130,7 @@ async function load() {
         if (!oficinas.length) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-icon">🔧</div>
+                    <div class="empty-icon">${Icons.wrench(48)}</div>
                     <h3>Nenhuma oficina encontrada</h3>
                     <p>Ajuste a busca ou aumente o raio em quilômetros.</p>
                 </div>
@@ -167,7 +168,7 @@ async function load() {
                     <div class="oficina-actions">
                         <a href="detalhe_oficina.html?id=${of.id}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center">Ver detalhes</a>
                         <button type="button" class="fav-btn ${of.favoritada ? 'active' : ''}" data-fav="${of.id}" title="Favoritar">
-                            ${of.favoritada ? '★' : '☆'}
+                            ${of.favoritada ? Icons.star(18, true) : Icons.star(18, false)}
                         </button>
                     </div>
                 </div>

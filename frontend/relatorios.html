@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatórios — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -20,6 +20,7 @@
 <div id="charts" style="display:grid;grid-template-columns:1fr 1fr;gap:20px"></div>
 
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
@@ -28,7 +29,7 @@ renderLayout('relatorios');
 function barRows(rows, labelKey, blue) {
     if (!rows.length) {
         return `<div class="empty-state" style="padding:30px">
-            <div class="empty-icon" style="font-size:32px">📊</div>
+            <div class="empty-icon">${Icons.chart(32)}</div>
             <p>Nenhum dado disponível</p>
         </div>`;
     }
@@ -92,7 +93,7 @@ function barRows(rows, labelKey, blue) {
                 `).join('')}
                </div>`
             : `<div class="empty-state" style="padding:30px">
-                <div class="empty-icon" style="font-size:32px">📅</div>
+                <div class="empty-icon">${Icons.calendar(32)}</div>
                 <p>Nenhum dado disponível por mês</p>
                </div>`;
 
@@ -118,18 +119,18 @@ function barRows(rows, labelKey, blue) {
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
                     <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:var(--radius-sm)">
-                        <div style="font-size:36px;margin-bottom:8px">📋</div>
-                        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--gray-900)">${total}</div>
+                        <div class="empty-icon" style="margin-bottom:8px">${Icons.clipboard(36)}</div>
+                        <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--gray-900)">${total}</div>
                         <div style="font-size:13px;color:var(--gray-500)">Ocorrências totais</div>
                     </div>
                     <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:var(--radius-sm)">
-                        <div style="font-size:36px;margin-bottom:8px">⏱</div>
-                        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--orange)">${tempo}<span style="font-size:14px;font-weight:400">min</span></div>
+                        <div class="empty-icon" style="margin-bottom:8px">${Icons.clock(36)}</div>
+                        <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--orange)">${tempo}<span style="font-size:14px;font-weight:400">min</span></div>
                         <div style="font-size:13px;color:var(--gray-500)">Tempo médio parado</div>
                     </div>
                     <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:var(--radius-sm)">
-                        <div style="font-size:36px;margin-bottom:8px">✅</div>
-                        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--green)">${encerradas}</div>
+                        <div class="empty-icon" style="margin-bottom:8px">${Icons.check(36)}</div>
+                        <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--green)">${encerradas}</div>
                         <div style="font-size:13px;color:var(--gray-500)">Ocorrências encerradas</div>
                     </div>
                 </div>

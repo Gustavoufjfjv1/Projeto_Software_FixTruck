@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ocorrência — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="page-root"></div>
 
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
@@ -122,7 +123,7 @@ async function load() {
                 </div>
                 <div style="display:flex;gap:10px">
                     ${headerActions}
-                    <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
+                    <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
                 </div>
             </div>
 
@@ -180,7 +181,7 @@ async function load() {
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
                 <div><h1>Ocorrência</h1><p>Não foi possível carregar.</p></div>
-                <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
+                <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
             </div>
         `;
     }

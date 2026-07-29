@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="page-header">
-    <div>
-        <h1>Perfil da Empresa</h1>
-        <p>Gerencie seus dados de conta</p>
+<div class="form-page-center" style="max-width:560px">
+    <div class="page-header">
+        <div>
+            <h1>Perfil da Empresa</h1>
+            <p>Gerencie seus dados de conta</p>
+        </div>
     </div>
+
+    <div id="perfil-root"></div>
 </div>
 
-<div style="max-width:560px" id="perfil-root"></div>
-
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
@@ -35,11 +38,11 @@ async function load() {
             <div class="card">
                 <div class="card-header"><span class="card-title">Minha Conta</span></div>
                 <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--gray-50);border-radius:var(--radius-sm);margin-bottom:24px">
-                    <div style="width:52px;height:52px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-family:'Syne',sans-serif;font-weight:800">
+                    <div style="width:52px;height:52px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;font-family:var(--display);font-weight:700">
                         ${inicial}
                     </div>
                     <div>
-                        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:17px">${empresa.nome || ''}</div>
+                        <div style="font-family:var(--display);font-weight:700;font-size:17px">${empresa.nome || ''}</div>
                         <div style="font-size:13px;color:var(--gray-500)">${empresa.email || ''}</div>
                     </div>
                 </div>
@@ -79,11 +82,12 @@ async function load() {
                     <span class="info-value"><span class="badge badge-blue">MVP Free</span></span>
                 </div>
                 <div style="margin-top:16px">
-                    <a href="#" id="logoutBtn" class="btn btn-outline" style="color:var(--red);border-color:var(--red)">↩ Sair da conta</a>
+                    <a href="#" id="logoutBtn" class="btn btn-outline" style="color:var(--red);border-color:var(--red)">${Icons.logout(16)} Sair da conta</a>
                 </div>
             </div>
         `;
 
+        hydrateIcons();
         document.getElementById('perfilForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {
