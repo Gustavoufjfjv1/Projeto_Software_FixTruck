@@ -5,24 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova Ocorrência — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="page-header">
-    <div>
-        <h1>Nova Ocorrência</h1>
-        <p>Registro pelo motorista: informe o problema mecânico e a localização GPS</p>
+<div class="form-page-center">
+    <div class="page-header">
+        <div>
+            <h1>Nova Ocorrência</h1>
+            <p>Registro pelo motorista: informe o problema mecânico e a localização GPS</p>
+        </div>
+        <a href="ocorrencias.html" class="btn btn-outline"><span data-icon="arrowLeft" data-size="16"></span> Voltar</a>
     </div>
-    <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
-</div>
 
-<div style="max-width:680px">
     <div class="card">
         <div class="card-header"><span class="card-title">Dados da Ocorrência</span></div>
 
         <div class="alert alert-info">
-            A localização é capturada via GPS — não é necessário digitar o endereço completo.
+            Informe a rodovia/avenida, o KM e a cidade. O GPS continua obrigatório para as coordenadas.
         </div>
 
         <form id="ocForm">
@@ -64,13 +64,27 @@
             </div>
 
             <div class="form-group">
+                <label>Rodovia / Avenida</label>
+                <input type="text" name="via" id="via" placeholder="Ex: Rodovia Anhanguera ou Av. Brasil">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>KM</label>
+                    <input type="text" name="km" id="km" inputmode="numeric" placeholder="Ex: 45">
+                </div>
+                <div class="form-group">
+                    <label>Cidade</label>
+                    <input type="text" name="cidade" id="cidade" placeholder="Ex: Campinas/SP">
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label>Localização atual (GPS) *</label>
                 <button type="button" class="location-btn" id="locBtn">
                     Usar minha localização atual
                 </button>
                 <input type="hidden" name="lat" id="lat" required>
                 <input type="hidden" name="lon" id="lon" required>
-                <input type="hidden" name="endereco" id="endereco">
                 <div id="locStatus" style="font-size:12px;color:var(--gray-400);margin-top:6px">
                     Clique no botão para capturar as coordenadas automaticamente.
                 </div>
@@ -78,7 +92,7 @@
 
             <div style="display:flex;gap:12px;margin-top:8px">
                 <button type="submit" class="btn btn-primary" style="flex:1" id="submitBtn" disabled>
-                    Abrir Ocorrência e Buscar Oficinas →
+                    Abrir Ocorrência e Buscar Oficinas <span data-icon="arrowRight" data-size="16"></span>
                 </button>
             </div>
         </form>
@@ -86,69 +100,80 @@
 </div>
 
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('ocorrencias');
 
-document.getElementById('veiculo_id').addEventListener('change', function () {
-    const opt = this.options[this.selectedIndex];
-    document.getElementById('tipo_veiculo').value = opt.dataset.tipo || 'pesado';
+document.getElementById('veiculo_id').addEventListener('change', () => {
+    const opt = document.getElementById('veiculo_id').selectedOptions[0];
+    if (!opt) return;
     const mid = opt.dataset.motorista;
+    const tipo = opt.dataset.tipo;
+    if (tipo) document.getElementById('tipo_veiculo').value = tipo;
     if (mid) document.getElementById('motorista_id').value = mid;
 });
 
-document.getElementById('locBtn').addEventListener('click', getLocation);
+const btn = document.getElementById('locBtn');
+const status = document.getElementById('locStatus');
+const submitBtn = document.getElementById('submitBtn');
 
-function getLocation() {
-    const btn = document.getElementById('locBtn');
-    const status = document.getElementById('locStatus');
-    btn.textContent = 'Obtendo localização...';
+btn.addEventListener('click', () => {
     btn.disabled = true;
+    btn.textContent = 'Obtendo localização...';
     if (!navigator.geolocation) {
         status.textContent = 'Geolocalização não suportada neste navegador.';
         btn.disabled = false;
         return;
     }
-    navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude.toFixed(6);
-        const lon = pos.coords.longitude.toFixed(6);
-        document.getElementById('lat').value = lat;
-        document.getElementById('lon').value = lon;
-        document.getElementById('endereco').value = `GPS: ${lat}, ${lon}`;
-        status.textContent = `Localização capturada: ${lat}, ${lon}`;
-        status.style.color = 'var(--green)';
-        btn.textContent = 'Localização obtida via GPS';
-        btn.style.background = 'var(--green-muted)';
-        document.getElementById('submitBtn').disabled = false;
+    navigator.geolocation.getCurrentPosition((pos) => {
+        document.getElementById('lat').value = pos.coords.latitude;
+        document.getElementById('lon').value = pos.coords.longitude;
+        status.textContent = `Localização capturada: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+        status.style.color = 'var(--green-dark)';
+        btn.textContent = 'Localização capturada ✓';
+        btn.disabled = false;
+        submitBtn.disabled = false;
     }, () => {
         status.textContent = 'Não foi possível obter a localização GPS. Verifique as permissões do navegador.';
         status.style.color = 'var(--red)';
         btn.textContent = 'Usar minha localização atual';
         btn.disabled = false;
-    }, { enableHighAccuracy: true, timeout: 15000 });
-}
+    }, { enableHighAccuracy: true, timeout: 12000 });
+});
 
 document.getElementById('ocForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const lat = document.getElementById('lat').value;
-    const lon = document.getElementById('lon').value;
-    if (!lat || !lon) {
+    if (!document.getElementById('lat').value || !document.getElementById('lon').value) {
         showFlash('Capture a localização GPS antes de continuar.', 'error');
         return;
     }
     try {
-        const data = await Api.post('/api/ocorrencias', {
-            veiculo_id: Number(document.getElementById('veiculo_id').value) || null,
-            motorista_id: Number(document.getElementById('motorista_id').value) || null,
+        const via = document.getElementById('via').value.trim();
+        const km = document.getElementById('km').value.trim();
+        const cidade = document.getElementById('cidade').value.trim();
+        const partes = [];
+        if (via) partes.push(via);
+        if (km) partes.push(`KM ${km}`);
+        if (cidade) partes.push(cidade);
+        const endereco = partes.join(' — ');
+
+        const res = await Api.post('/api/ocorrencias', {
+            veiculo_id: document.getElementById('veiculo_id').value || null,
+            motorista_id: document.getElementById('motorista_id').value || null,
             tipo_problema: document.getElementById('tipo_problema').value,
             pane_total: document.getElementById('pane_total').checked,
-            lat,
-            lon,
-            endereco: document.getElementById('endereco').value,
+            lat: document.getElementById('lat').value,
+            lon: document.getElementById('lon').value,
+            via,
+            km,
+            cidade,
+            endereco,
             tipo_veiculo: document.getElementById('tipo_veiculo').value,
         });
-        window.location.href = `buscar_oficinas.html?id=${data.id}`;
+        showFlash(res.mensagem || 'Ocorrência registrada.', 'success');
+        window.location.href = `buscar_oficinas.html?id=${res.id}`;
     } catch (err) {
         showFlash(err.message, 'error');
     }
@@ -159,15 +184,11 @@ document.getElementById('ocForm').addEventListener('submit', async (e) => {
         const data = await Api.get('/api/ocorrencias/form-data');
         const veiculos = data.veiculos || [];
         const motoristas = data.motoristas || [];
-
         document.getElementById('veiculo_id').innerHTML =
             '<option value="">Selecione o veículo...</option>' +
             veiculos.map(v =>
-                `<option value="${v.id}" data-tipo="${v.tipo_veiculo || 'pesado'}" data-motorista="${v.motorista_id || ''}">
-                    ${v.placa} — ${v.modelo || v.tipo_veiculo || ''}${v.motorista_nome ? ' (' + v.motorista_nome + ')' : ''}
-                </option>`
+                `<option value="${v.id}" data-motorista="${v.motorista_id || ''}" data-tipo="${v.tipo_veiculo || 'pesado'}">${v.placa} — ${v.modelo || v.tipo_veiculo}${v.motorista_nome ? ' (' + v.motorista_nome + ')' : ''}</option>`
             ).join('');
-
         document.getElementById('motorista_id').innerHTML =
             '<option value="">Vinculado ao veículo</option>' +
             motoristas.map(m => `<option value="${m.id}">${m.nome}</option>`).join('');

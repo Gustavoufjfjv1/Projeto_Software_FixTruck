@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oficinas Próximas — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="page-root"></div>
 
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
@@ -80,7 +81,7 @@ function renderCard(of, oc) {
             <button type="button" class="btn btn-primary btn-sm" data-vincular="${of.id}">Selecionar oficina</button>
             <a href="detalhe_oficina.html?id=${of.id}" class="btn btn-outline btn-sm">Ver detalhes</a>
             <button type="button" class="fav-btn ${of.favoritada ? 'active' : ''}" data-fav="${of.id}" title="Favoritar" style="margin-left:auto">
-                ${of.favoritada ? '★' : '☆'}
+                ${of.favoritada ? Icons.star(18, true) : Icons.star(18, false)}
             </button>
         </div>
         ${of.atende_tipo ? '<div style="margin-top:10px;font-size:12px;color:var(--green);font-weight:600">Atende o tipo de problema informado</div>' : ''}
@@ -99,12 +100,13 @@ async function load() {
         const listHtml = oficinas.length
             ? `<div class="oficinas-grid">${oficinas.map(of => renderCard(of, oc)).join('')}</div>`
             : `<div class="empty-state">
-                <div class="empty-icon">🔧</div>
+                <div class="empty-icon">${Icons.wrench(48)}</div>
                 <h3>Nenhuma oficina no raio selecionado</h3>
                 <p>Aumente o raio de distância em quilômetros ou remova o filtro.</p>
                </div>`;
 
-        document.getElementById('page-root').innerHTML = `
+        const root = document.getElementById('page-root');
+        root.innerHTML = `
             <div class="page-header">
                 <div>
                     <h1>Oficinas Próximas</h1>
@@ -112,7 +114,7 @@ async function load() {
                        ${oc.pane_total ? '<span class="badge badge-red" style="margin-left:8px">PANE TOTAL</span>' : ''}
                     </p>
                 </div>
-                <a href="detalhe_ocorrencia.html?id=${oc.id}" class="btn btn-outline">← Ocorrência</a>
+                <a href="detalhe_ocorrencia.html?id=${oc.id}" class="btn btn-outline">${Icons.arrowLeft(16)} Ocorrência</a>
             </div>
 
             ${oc.pane_total ? `
@@ -137,7 +139,7 @@ async function load() {
                         <option value="100">Até 100 km</option>
                     </select>
                     <span style="font-size:13px;color:var(--gray-400)">${oficinas.length} oficina(s) encontrada(s)</span>
-                    ${raio ? `<a href="buscar_oficinas.html?id=${id}" class="btn btn-outline btn-sm">✕ Limpar raio</a>` : ''}
+                    ${raio ? `<a href="buscar_oficinas.html?id=${id}" class="btn btn-outline btn-sm">${Icons.x(16)} Limpar raio</a>` : ''}
                 </div>
             </div>
 
@@ -164,13 +166,14 @@ async function load() {
         });
         document.querySelectorAll('[data-fav]').forEach(btn => {
             btn.addEventListener('click', () => favoritar(btn.dataset.fav));
+        hydrateIcons(root);
         });
     } catch (err) {
         showFlash(err.message, 'error');
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
                 <div><h1>Oficinas Próximas</h1></div>
-                <a href="ocorrencias.html" class="btn btn-outline">← Voltar</a>
+                <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
             </div>
         `;
     }

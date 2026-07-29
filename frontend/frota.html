@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frota — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -27,11 +27,11 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>CNH</label>
-                    <input type="text" name="cnh" id="mot_cnh" placeholder="Número da CNH">
+                    <input type="text" name="cnh" id="mot_cnh" inputmode="numeric" maxlength="11" placeholder="00000000000" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label>Telefone</label>
-                    <input type="text" name="telefone" id="mot_telefone" placeholder="(11) 99999-9999">
+                    <input type="text" name="telefone" id="mot_telefone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000" autocomplete="tel">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">Cadastrar motorista</button>
@@ -44,7 +44,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Placa *</label>
-                    <input type="text" name="placa" id="vei_placa" required placeholder="ABC1D23" maxlength="7">
+                    <input type="text" name="placa" id="vei_placa" required placeholder="ABC1D23" maxlength="7" autocomplete="off" style="text-transform:uppercase">
                 </div>
                 <div class="form-group">
                     <label>Tipo *</label>
@@ -87,10 +87,16 @@
 </div>
 
 <script src="js/api.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/masks.js"></script>
 <script src="js/layout.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('frota');
+
+Masks.bind(document.getElementById('mot_cnh'), 'cnh');
+Masks.bind(document.getElementById('mot_telefone'), 'telefone');
+Masks.bind(document.getElementById('vei_placa'), 'placa');
 
 function optionsMotoristas(motoristas, selectedId) {
     return '<option value="">Sem motorista</option>' +
@@ -161,7 +167,7 @@ async function load() {
         } else {
             veiEl.innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-icon">🚚</div>
+                    <div class="empty-icon">${Icons.truck(48)}</div>
                     <h3>Nenhum veículo cadastrado</h3>
                     <p>Cadastre o primeiro veículo da frota ao lado.</p>
                 </div>
@@ -197,7 +203,7 @@ async function load() {
         } else {
             motEl.innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-icon">👤</div>
+                    <div class="empty-icon">${Icons.user(48)}</div>
                     <h3>Nenhum motorista cadastrado</h3>
                 </div>
             `;

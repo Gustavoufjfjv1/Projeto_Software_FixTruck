@@ -93,7 +93,20 @@ def criar():
     pane_total = 1 if data.get('pane_total') else 0
     lat = data.get('lat')
     lon = data.get('lon')
-    endereco = data.get('endereco', '')
+    via = (data.get('via') or '').strip()
+    km = (data.get('km') or '').strip()
+    cidade = (data.get('cidade') or '').strip()
+    endereco = (data.get('endereco') or '').strip()
+
+    if not endereco:
+        partes = []
+        if via:
+            partes.append(via)
+        if km:
+            partes.append(f'KM {km}')
+        if cidade:
+            partes.append(cidade)
+        endereco = ' — '.join(partes)
 
     if not tipo_problema:
         return jsonify({'erro': 'Tipo de problema é obrigatório.'}), 400

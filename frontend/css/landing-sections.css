@@ -1,0 +1,277 @@
+/* Seções da landing: Modelo de Receita + Diferencial */
+body.landing-page .lp-screen {
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 96px 48px;
+    text-align: center;
+    background: #0a0a0a !important;
+    position: relative;
+    isolation: isolate;
+}
+
+body.landing-page .lp-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+        linear-gradient(180deg, #0a0a0a 0%, #0a0a0a 35%, #0b1510 70%, #0d1f14 100%),
+        radial-gradient(ellipse 70% 55% at 50% 100%, rgba(0, 230, 118, 0.18), transparent 70%);
+    pointer-events: none;
+}
+
+/* Diferencial: verde no topo → preto na base */
+body.landing-page .lp-compare::before {
+    background:
+        linear-gradient(180deg, #0d1f14 0%, #0b1510 30%, #0a0a0a 70%, #0a0a0a 100%),
+        radial-gradient(ellipse 70% 55% at 50% 0%, rgba(0, 230, 118, 0.2), transparent 70%);
+}
+
+body.landing-page .lp-screen > * {
+    position: relative;
+    z-index: 1;
+}
+
+body.landing-page .lp-screen-eyebrow {
+    color: #00e676 !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0 0 16px;
+}
+
+body.landing-page .lp-screen-title {
+    font-family: 'Space Grotesk', 'Outfit', sans-serif !important;
+    font-size: clamp(40px, 5.5vw, 58px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin: 0 0 14px;
+    text-transform: uppercase;
+    color: #fff !important;
+}
+
+body.landing-page .lp-screen-title span {
+    color: #00e676 !important;
+}
+
+body.landing-page .lp-screen-sub {
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-size: 16px;
+    margin: 0 0 52px;
+}
+
+body.landing-page .lp-screen-footnote {
+    margin: 44px 0 0;
+    max-width: 640px;
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-size: 14px;
+    font-style: italic;
+    line-height: 1.6;
+}
+
+/* ——— Cards de planos ——— */
+body.landing-page .lp-pricing-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(240px, 300px)) !important;
+    gap: 24px;
+    width: 100%;
+    max-width: 980px;
+    justify-content: center;
+    align-items: stretch;
+}
+
+body.landing-page .lp-price-card {
+    display: block !important;
+    background: #151515 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 20px !important;
+    padding: 36px 28px 30px !important;
+    text-align: left !important;
+    position: relative;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+body.landing-page .lp-price-card-featured {
+    border: 1.5px solid #00e676 !important;
+    box-shadow: 0 0 0 1px rgba(0, 230, 118, 0.15), 0 20px 50px rgba(0, 230, 118, 0.1);
+}
+
+body.landing-page .lp-price-badge {
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #00e676 !important;
+    color: #0a0a0a !important;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+body.landing-page .lp-price-card h3 {
+    font-family: 'Space Grotesk', 'Outfit', sans-serif !important;
+    font-size: 22px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 8px;
+    color: #fff !important;
+}
+
+body.landing-page .lp-price-card-featured h3 {
+    color: #00e676 !important;
+}
+
+body.landing-page .lp-price-fleet {
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-size: 14px;
+    margin: 0 0 4px;
+}
+
+body.landing-page .lp-price-segment {
+    color: #00e676 !important;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 20px;
+}
+
+body.landing-page .lp-price-list {
+    list-style: none !important;
+    margin: 0;
+    padding: 18px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+body.landing-page .lp-price-list li {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.82) !important;
+    font-size: 14px;
+    line-height: 1.4;
+    list-style: none !important;
+}
+
+body.landing-page .lp-ico-ok,
+body.landing-page .lp-ico-no {
+    display: inline-flex !important;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+}
+
+body.landing-page .lp-ico-ok svg {
+    width: 18px;
+    height: 18px;
+    stroke: #00e676;
+    color: #00e676;
+}
+
+body.landing-page .lp-ico-no svg {
+    width: 18px;
+    height: 18px;
+    stroke: #ef4444;
+    color: #ef4444;
+}
+
+/* ——— Tabela comparativa ——— */
+body.landing-page .lp-compare-wrap {
+    width: 100%;
+    max-width: 860px;
+    overflow-x: auto;
+}
+
+body.landing-page .lp-compare-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #151515 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 18px;
+    overflow: hidden;
+    color: #fff;
+}
+
+body.landing-page .lp-compare-table th,
+body.landing-page .lp-compare-table td {
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    background: transparent !important;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+body.landing-page .lp-compare-table thead th {
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-weight: 600;
+    font-size: 13px;
+    background: #121212 !important;
+}
+
+body.landing-page .lp-compare-table tbody td:first-child {
+    color: rgba(255, 255, 255, 0.88) !important;
+    font-weight: 500;
+    text-align: left;
+    width: 38%;
+}
+
+body.landing-page .lp-compare-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+body.landing-page .lp-compare-table th:not(:first-child),
+body.landing-page .lp-compare-table td:not(:first-child) {
+    text-align: center;
+    width: 20.5%;
+}
+
+body.landing-page .lp-compare-table .lp-col-fix {
+    background: rgba(0, 230, 118, 0.08) !important;
+    color: #00e676 !important;
+    font-weight: 700;
+    box-shadow: inset 1px 0 0 rgba(0, 230, 118, 0.25);
+}
+
+body.landing-page .lp-compare-table thead .lp-col-fix {
+    color: #00e676 !important;
+    background: rgba(0, 230, 118, 0.1) !important;
+}
+
+body.landing-page .lp-compare-table .lp-ico-ok,
+body.landing-page .lp-compare-table .lp-ico-no {
+    margin: 0 auto;
+    justify-content: center;
+}
+
+@media (max-width: 900px) {
+    body.landing-page .lp-screen {
+        padding: 72px 20px;
+        min-height: auto;
+    }
+
+    body.landing-page .lp-pricing-grid {
+        grid-template-columns: 1fr !important;
+        max-width: 360px;
+    }
+
+    body.landing-page .lp-compare-table th,
+    body.landing-page .lp-compare-table td {
+        padding: 14px 10px;
+        font-size: 12px;
+    }
+}

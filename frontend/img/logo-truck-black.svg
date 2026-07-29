@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="FixTruck">
+  <rect x="4" y="22" width="34" height="20" rx="3" fill="#0A0A0A"/>
+  <path d="M38 26h12l8 10v6H38V26z" fill="#0A0A0A"/>
+  <rect x="40" y="28" width="10" height="7" rx="1.5" fill="#0A0A0A"/>
+  <rect x="6" y="38" width="52" height="3" rx="1.5" fill="#0A0A0A"/>
+  <circle cx="14" cy="46" r="6" fill="#0A0A0A"/>
+  <circle cx="14" cy="46" r="2.2" fill="#0A0A0A"/>
+  <circle cx="48" cy="46" r="6" fill="#0A0A0A"/>
+  <circle cx="48" cy="46" r="2.2" fill="#0A0A0A"/>
+  <circle cx="56" cy="34" r="2" fill="#0A0A0A"/>
+</svg>
