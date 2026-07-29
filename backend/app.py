@@ -3,13 +3,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, jsonify, g, request
+from flask import Flask, jsonify, g, request, send_from_directory
 from database import init_db
 from controllers import registrar_blueprints
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend'), static_url_path='')
     app.secret_key = os.environ.get('FIXTRUCK_SECRET', 'fixtruck-secret-2024')
 
     @app.after_request
@@ -35,6 +35,11 @@ def create_app():
         return jsonify({'status': 'ok', 'service': 'fixtruck-api'})
 
     registrar_blueprints(app)
+
+    @app.route('/')
+    def index():
+        return send_from_directory(app.static_folder, 'index.html')
+    
     return app
 
 
