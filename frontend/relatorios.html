@@ -17,7 +17,7 @@
 </div>
 
 <div id="stats-grid" class="stats-grid" style="margin-bottom:28px"></div>
-<div id="charts" style="display:grid;grid-template-columns:1fr 1fr;gap:20px"></div>
+<div id="charts" class="charts-grid"></div>
 
 <script src="js/api.js"></script>
 <script src="js/icons.js"></script>
@@ -117,7 +117,7 @@ function barRows(rows, labelKey, blue) {
                 <div class="card-header">
                     <span class="card-title">Resumo Executivo</span>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+                <div class="grid-3">
                     <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:var(--radius-sm)">
                         <div class="empty-icon" style="margin-bottom:8px">${Icons.clipboard(36)}</div>
                         <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--gray-900)">${total}</div>

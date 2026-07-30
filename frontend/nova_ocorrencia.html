@@ -13,7 +13,7 @@
     <div class="page-header">
         <div>
             <h1>Nova Ocorrência</h1>
-            <p>Registro pelo motorista: informe o problema mecânico e a localização GPS</p>
+            <p>Registro pelo motorista: informe o problema mecânico e o local da ocorrência</p>
         </div>
         <a href="ocorrencias.html" class="btn btn-outline"><span data-icon="arrowLeft" data-size="16"></span> Voltar</a>
     </div>
@@ -22,7 +22,7 @@
         <div class="card-header"><span class="card-title">Dados da Ocorrência</span></div>
 
         <div class="alert alert-info">
-            Informe a rodovia/avenida, o KM e a cidade. O GPS continua obrigatório para as coordenadas.
+            Informe onde você está (rodovia/avenida, KM e cidade) ou use o GPS. Pelo menos uma das opções é necessária.
         </div>
 
         <form id="ocForm">
@@ -64,7 +64,7 @@
             </div>
 
             <div class="form-group">
-                <label>Rodovia / Avenida</label>
+                <label>Rodovia / Avenida *</label>
                 <input type="text" name="via" id="via" placeholder="Ex: Rodovia Anhanguera ou Av. Brasil">
             </div>
             <div class="form-row">
@@ -73,25 +73,25 @@
                     <input type="text" name="km" id="km" inputmode="numeric" placeholder="Ex: 45">
                 </div>
                 <div class="form-group">
-                    <label>Cidade</label>
+                    <label>Cidade *</label>
                     <input type="text" name="cidade" id="cidade" placeholder="Ex: Campinas/SP">
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Localização atual (GPS) *</label>
+                <label>Localização atual (GPS) — opcional</label>
                 <button type="button" class="location-btn" id="locBtn">
                     Usar minha localização atual
                 </button>
-                <input type="hidden" name="lat" id="lat" required>
-                <input type="hidden" name="lon" id="lon" required>
+                <input type="hidden" name="lat" id="lat">
+                <input type="hidden" name="lon" id="lon">
                 <div id="locStatus" style="font-size:12px;color:var(--gray-400);margin-top:6px">
-                    Clique no botão para capturar as coordenadas automaticamente.
+                    Opcional: clique para capturar as coordenadas e filtrar oficinas por distância.
                 </div>
             </div>
 
             <div style="display:flex;gap:12px;margin-top:8px">
-                <button type="submit" class="btn btn-primary" style="flex:1" id="submitBtn" disabled>
+                <button type="submit" class="btn btn-primary" style="flex:1" id="submitBtn">
                     Abrir Ocorrência e Buscar Oficinas <span data-icon="arrowRight" data-size="16"></span>
                 </button>
             </div>
@@ -117,7 +117,6 @@ document.getElementById('veiculo_id').addEventListener('change', () => {
 
 const btn = document.getElementById('locBtn');
 const status = document.getElementById('locStatus');
-const submitBtn = document.getElementById('submitBtn');
 
 btn.addEventListener('click', () => {
     btn.disabled = true;
@@ -134,7 +133,6 @@ btn.addEventListener('click', () => {
         status.style.color = 'var(--green-dark)';
         btn.textContent = 'Localização capturada ✓';
         btn.disabled = false;
-        submitBtn.disabled = false;
     }, () => {
         status.textContent = 'Não foi possível obter a localização GPS. Verifique as permissões do navegador.';
         status.style.color = 'var(--red)';
@@ -145,27 +143,36 @@ btn.addEventListener('click', () => {
 
 document.getElementById('ocForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!document.getElementById('lat').value || !document.getElementById('lon').value) {
-        showFlash('Capture a localização GPS antes de continuar.', 'error');
+    const via = document.getElementById('via').value.trim();
+    const km = document.getElementById('km').value.trim();
+    const cidade = document.getElementById('cidade').value.trim();
+    const lat = document.getElementById('lat').value;
+    const lon = document.getElementById('lon').value;
+    const partes = [];
+    if (via) partes.push(via);
+    if (km) partes.push(`KM ${km}`);
+    if (cidade) partes.push(cidade);
+    const endereco = partes.join(' — ');
+
+    if (!endereco && (!lat || !lon)) {
+        showFlash('Informe a rodovia/avenida e a cidade, ou capture o GPS.', 'error');
         return;
     }
-    try {
-        const via = document.getElementById('via').value.trim();
-        const km = document.getElementById('km').value.trim();
-        const cidade = document.getElementById('cidade').value.trim();
-        const partes = [];
-        if (via) partes.push(via);
-        if (km) partes.push(`KM ${km}`);
-        if (cidade) partes.push(cidade);
-        const endereco = partes.join(' — ');
+    if (!via || !cidade) {
+        if (!lat || !lon) {
+            showFlash('Preencha a rodovia/avenida e a cidade para continuar sem GPS.', 'error');
+            return;
+        }
+    }
 
+    try {
         const res = await Api.post('/api/ocorrencias', {
             veiculo_id: document.getElementById('veiculo_id').value || null,
             motorista_id: document.getElementById('motorista_id').value || null,
             tipo_problema: document.getElementById('tipo_problema').value,
             pane_total: document.getElementById('pane_total').checked,
-            lat: document.getElementById('lat').value,
-            lon: document.getElementById('lon').value,
+            lat: lat || null,
+            lon: lon || null,
             via,
             km,
             cidade,
