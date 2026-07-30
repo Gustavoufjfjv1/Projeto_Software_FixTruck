@@ -110,8 +110,13 @@ def criar():
 
     if not tipo_problema:
         return jsonify({'erro': 'Tipo de problema é obrigatório.'}), 400
-    if not lat or not lon:
-        return jsonify({'erro': 'Informe a localização via GPS para registrar a ocorrência.'}), 400
+
+    tem_gps = bool(lat and lon)
+    tem_endereco = bool(endereco)
+    if not tem_gps and not tem_endereco:
+        return jsonify({
+            'erro': 'Informe o local (rodovia/avenida, KM e cidade) ou capture a localização GPS.',
+        }), 400
 
     tipo_veiculo = data.get('tipo_veiculo', 'pesado')
     if veiculo_id:
@@ -124,17 +129,19 @@ def criar():
             if not motorista_id and veiculo['motorista_id']:
                 motorista_id = veiculo['motorista_id']
 
+    endereco_final = endereco or (f'GPS: {lat}, {lon}' if tem_gps else '')
+
     db.execute(
         """INSERT INTO ocorrencias (empresa_id, motorista_id, veiculo_id, tipo_veiculo, tipo_problema,
            pane_total, lat, lon, endereco, status, data_abertura)
            VALUES (?,?,?,?,?,?,?,?,?,'aberta',datetime('now','localtime'))""",
         (empresa_id, motorista_id, veiculo_id, tipo_veiculo, tipo_problema,
-         pane_total, lat, lon, endereco or f'GPS: {lat}, {lon}'),
+         pane_total, lat or None, lon or None, endereco_final),
     )
     db.commit()
     oc_id = db.execute('SELECT last_insert_rowid() as id').fetchone()['id']
     return jsonify({
-        'mensagem': 'Ocorrência registrada com localização GPS.',
+        'mensagem': 'Ocorrência registrada.',
         'id': oc_id,
     }), 201
 
