@@ -1,11 +1,19 @@
-from flask_sqlalchemy import SQLAlchemy
-db = SQLAlchemy()
-
 from .base import ModeloBase
-from .base_usuario import  Usuario
 from .empresa import Empresa
-from .usuario import Gestor, Motorista, Oficina
+from .motorista import Motorista
 from .veiculo import Veiculo
+from .oficina import Oficina
 from .ocorrencia import Ocorrencia
 from .orcamento import Orcamento
-from .mensagem_chat import MensagemChat
+from .favorito import Favorito
+
+__all__ = [
+    'ModeloBase',
+    'Empresa',
+    'Motorista',
+    'Veiculo',
+    'Oficina',
+    'Ocorrencia',
+    'Orcamento',
+    'Favorito',
+]
