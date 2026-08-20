@@ -1,11 +1,29 @@
-from . import db
 from .base import ModeloBase
 
 
 class Empresa(ModeloBase):
-    __tablename__ = "empresas"
+    tabela = 'empresas'
+    campos = ('nome', 'email', 'senha', 'qtd_caminhoes')
 
-    razao_social = db.Column(db.String(100), nullable=False)
-    cnpj = db.Column(db.String(14), nullable=False)
-    endereco = db.Column(db.String(200), nullable=False)
-    ocorrencias = db.relationship("Ocorrencia", back_populates="empresa")
+    @classmethod
+    def buscar_por_email(cls, email):
+        row = cls._db().execute(
+            'SELECT * FROM empresas WHERE email=?', (email,)
+        ).fetchone()
+        return cls._to_dict(row)
+
+    @classmethod
+    def autenticar(cls, email, senha):
+        row = cls._db().execute(
+            'SELECT * FROM empresas WHERE email=? AND senha=?',
+            (email, senha),
+        ).fetchone()
+        return cls._to_dict(row)
+
+    @classmethod
+    def buscar_publico(cls, id_):
+        row = cls._db().execute(
+            'SELECT id, nome, email, qtd_caminhoes FROM empresas WHERE id=?',
+            (id_,),
+        ).fetchone()
+        return cls._to_dict(row)
