@@ -18,6 +18,7 @@
 
 ### Back-end
 - Python (Flask) — API REST JSON
+- Flask-SQLAlchemy
 
 ### Banco de dados
 - SQLite
@@ -26,16 +27,36 @@
 
 O FixTruck é um sistema de gestão de ocorrências mecânicas projetado especificamente para transportadoras e frotas de transporte rodoviário. O objetivo principal da solução é reduzir o downtime quando ocorre uma pane em rota. A plataforma conecta motoristas e gestores a oficinas mecânicas próximas através de geolocalização e filtros baseados na especialidade técnica.
 
+## Funcionalidades Implementadas
+
+1. Cadastrar empresa
+2. Autenticar empresa (login)
+3. Cadastrar motorista
+4. Cadastrar veículo
+5. Registrar ocorrência
+6. Listar ocorrências (com filtros)
+7. Buscar oficinas para ocorrência
+8. Favoritar oficina
+9. Enviar e decidir orçamento
+10. Gerar relatório de ocorrências
+
+Cada funcionalidade está disponível de ponta a ponta: Interface → API Flask → Controller (classe) → Service (um por caso de uso) → Model/`Repository` → Banco de Dados.
+
+Também estão implementados no mesmo padrão: vincular motorista ao veículo, encerrar ocorrência, dashboard e atualizar perfil.
+
 ## Estrutura do projeto
 
 ```text
 fixtruck/
-├── backend/     # API Flask (JSON)
+├── backend/              # API Flask (JSON)
 │   ├── app.py
-│   ├── database.py
-│   ├── controllers/
+│   ├── database.py       # SQLAlchemy (db)
+│   ├── controllers/      # Classes Controller por recurso
+│   ├── services/         # Um Service por caso de uso
+│   ├── models/           # Entidades (db.Model) com CRUD
+│   ├── repositories/     # Consultas complexas / filtros / relatórios
 │   └── fixtruck.db
-└── frontend/    # Interface que consome a API
+└── frontend/             # Interface que consome a API
     ├── *.html
     ├── css/
     ├── js/

@@ -1,11 +1,11 @@
-from .base import ModeloBase
-from .empresa import Empresa
-from .motorista import Motorista
-from .veiculo import Veiculo
-from .oficina import Oficina
-from .ocorrencia import Ocorrencia
-from .orcamento import Orcamento
-from .favorito import Favorito
+from models.base import ModeloBase
+from models.empresa import Empresa
+from models.motorista import Motorista
+from models.veiculo import Veiculo
+from models.oficina import Oficina
+from models.ocorrencia import Ocorrencia
+from models.orcamento import Orcamento
+from models.favorito import Favorito
 
 __all__ = [
     'ModeloBase',

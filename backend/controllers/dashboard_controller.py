@@ -1,11 +1,18 @@
 from flask import Blueprint, jsonify, g
 from auth import login_required
-from services import DashboardService
-
-dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
+from services import ObterDashboardService
 
 
-@dashboard_bp.route('', methods=['GET'])
-@login_required
-def dashboard():
-    return jsonify(DashboardService.obter(g.empresa_id))
+class DashboardController:
+    """Controller do dashboard gerencial."""
+
+    def __init__(self):
+        self.bp = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
+        self.bp.add_url_rule('', view_func=login_required(self.obter), methods=['GET'])
+
+    def obter(self):
+        return jsonify(ObterDashboardService().executar(g.empresa_id))
+
+
+dashboard_controller = DashboardController()
+dashboard_bp = dashboard_controller.bp

@@ -1,24 +1,14 @@
-from .base import ModeloBase
+from database import db
+from models.base import ModeloBase
 
 
 class Favorito(ModeloBase):
-    tabela = 'favoritos'
-    campos = ('empresa_id', 'oficina_id')
+    __tablename__ = 'favoritos'
 
-    @classmethod
-    def buscar_par(cls, empresa_id, oficina_id):
-        row = cls._db().execute(
-            'SELECT * FROM favoritos WHERE empresa_id=? AND oficina_id=?',
-            (empresa_id, oficina_id),
-        ).fetchone()
-        return cls._to_dict(row)
+    id = db.Column(db.Integer, primary_key=True)
+    empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False)
+    oficina_id = db.Column(db.Integer, db.ForeignKey('oficinas.id'), nullable=False)
 
-    @classmethod
-    def remover_par(cls, empresa_id, oficina_id):
-        db = cls._db()
-        db.execute(
-            'DELETE FROM favoritos WHERE empresa_id=? AND oficina_id=?',
-            (empresa_id, oficina_id),
-        )
-        db.commit()
-        return True
+    __table_args__ = (
+        db.UniqueConstraint('empresa_id', 'oficina_id', name='uq_favorito_empresa_oficina'),
+    )
