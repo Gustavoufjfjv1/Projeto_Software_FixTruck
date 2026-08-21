@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Senha — FIXTRUCK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-shell">
+    <a href="login.html" class="auth-back"><span data-icon="arrowLeft" data-size="16"></span> Voltar ao login</a>
+
+    <div class="auth-layout">
+        <div class="auth-card">
+            <div class="auth-card-top">
+                <span class="brand-pill">
+                    <img src="img/logo-truck.svg" alt="" class="brand-pill-icon">
+                    FIX<strong>TRUCK</strong>
+                </span>
+            </div>
+            <div class="auth-card-body">
+                <h1>Recuperar Senha</h1>
+                <p class="auth-card-sub">Informe o e-mail cadastrado da transportadora</p>
+
+                <div id="alert-box"></div>
+
+                <form id="recuperarForm">
+                    <div class="form-group">
+                        <label>E-mail corporativo</label>
+                        <div class="input-with-icon">
+                            <span class="input-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 7l8 6 8-6"/></svg>
+                            </span>
+                            <input type="email" name="email" id="email" placeholder="seu@empresa.com" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-neon btn-full btn-lg" id="submitBtn">Gerar código de recuperação <span class="icon-end" data-icon="arrowRight" data-size="18"></span></button>
+                </form>
+
+                <div id="resultado-box" style="display:none;margin-top:20px">
+                    <div class="alert alert-info">
+                        Este é um MVP acadêmico sem envio real de e-mail. Em produção, o código abaixo seria
+                        enviado para o e-mail informado — aqui ele é exibido diretamente na tela.
+                    </div>
+                    <div class="form-group">
+                        <label>Código de recuperação</label>
+                        <input type="text" id="tokenGerado" readonly style="font-family:monospace;font-size:12px">
+                    </div>
+                    <a href="#" id="irRedefinir" class="btn btn-primary btn-full">Ir para redefinição de senha</a>
+                </div>
+
+                <p class="auth-footer-text">
+                    Lembrou a senha? <a href="login.html">Fazer login</a>
+                </p>
+            </div>
+        </div>
+
+        <aside class="auth-aside">
+            <h2>Como funciona</h2>
+            <ol class="auth-steps">
+                <li>
+                    <span class="step-num">1</span>
+                    <div>
+                        <strong>Informe seu e-mail</strong>
+                        <p>Verificamos se existe uma conta cadastrada com esse e-mail.</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="step-num">2</span>
+                    <div>
+                        <strong>Receba o código</strong>
+                        <p>Em produção, o código chegaria por e-mail. Neste MVP, ele aparece na tela.</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="step-num">3</span>
+                    <div>
+                        <strong>Defina uma nova senha</strong>
+                        <p>O código é válido por 30 minutos e só pode ser usado uma vez.</p>
+                    </div>
+                </li>
+            </ol>
+        </aside>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/icons.js"></script>
+    <script>
+    document.getElementById('recuperarForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertBox = document.getElementById('alert-box');
+        const submitBtn = document.getElementById('submitBtn');
+        alertBox.innerHTML = '';
+        submitBtn.disabled = true;
+        try {
+            const email = document.getElementById('email').value;
+            const data = await Api.post('/api/auth/recuperar-senha', { email });
+            document.getElementById('tokenGerado').value = data.token;
+            document.getElementById('resultado-box').style.display = 'block';
+            document.getElementById('irRedefinir').href = `redefinir_senha.html?token=${encodeURIComponent(data.token)}`;
+            showFlash(data.mensagem || 'Código gerado.', 'success');
+        } catch (err) {
+            alertBox.innerHTML = `<div class="alert alert-warning">${err.message}</div>`;
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+    </script>
+</body>
+</html>

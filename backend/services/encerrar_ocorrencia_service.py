@@ -15,6 +15,8 @@ class EncerrarOcorrenciaService:
         if not oficina_id:
             raise ServiceError('Selecione uma oficina para encerrar a ocorrência.', 400)
 
+        if not oc.data_vinculacao:
+            oc.data_vinculacao = agora_local()
         oc.status = STATUS_RESOLVIDO
         oc.oficina_id = oficina_id
         oc.motivo_resolucao = dados.get('motivo', '')

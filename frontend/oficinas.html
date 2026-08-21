@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oficinas — FixTruck</title>
+    <title>Oficinas Favoritas — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -11,8 +11,8 @@
 <body>
 <div class="page-header">
     <div>
-        <h1>Rede de Oficinas</h1>
-        <p>Busque oficinas e filtre pelo raio de distância em quilômetros</p>
+        <h1>Oficinas Favoritas</h1>
+        <p>Suas oficinas de confiança, salvas para acesso rápido em uma próxima ocorrência</p>
     </div>
 </div>
 
@@ -38,7 +38,7 @@
         <a href="oficinas.html" id="btn-limpar" class="btn btn-outline" style="display:none"><span data-icon="x" data-size="16"></span> Limpar</a>
     </div>
     <div id="gpsStatus" style="font-size:12px;color:var(--gray-400);margin-top:10px">
-        Para filtrar por raio, use o GPS ou informe coordenadas.
+        Filtros opcionais para localizar uma favorita específica. Para filtrar por raio, use o GPS ou informe coordenadas.
     </div>
 </form>
 
@@ -124,15 +124,19 @@ async function load() {
         if (lon) params.set('lon', lon);
         const q = params.toString();
         const data = await Api.get('/api/oficinas' + (q ? '?' + q : ''));
-        const oficinas = data.oficinas || [];
+        const oficinas = (data.oficinas || []).filter(of => of.favoritada);
         const container = document.getElementById('lista-container');
 
         if (!oficinas.length) {
             container.innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-icon">${Icons.wrench(48)}</div>
-                    <h3>Nenhuma oficina encontrada</h3>
-                    <p>Ajuste a busca ou aumente o raio em quilômetros.</p>
+                    <div class="empty-icon">${Icons.star(48, false)}</div>
+                    <h3>Você ainda não tem oficinas favoritas</h3>
+                    <p>
+                        ${busca || raio
+                            ? 'Nenhuma favorita corresponde a este filtro.'
+                            : 'Favorite uma oficina na tela de busca (durante uma ocorrência) para vê-la aqui.'}
+                    </p>
                 </div>
             `;
             return;
@@ -141,7 +145,7 @@ async function load() {
         container.innerHTML = `
             <div class="oficinas-grid">
             ${oficinas.map(of => `
-                <div class="oficina-card">
+                <div class="oficina-card ${of.aberta_agora ? '' : 'oficina-card-fechada'}">
                     ${of.tem_guincho ? `
                     <div style="position:absolute;top:14px;right:14px">
                         <span class="guincho-badge">Guincho</span>
@@ -158,7 +162,7 @@ async function load() {
                         <span>
                             ${of.aberta_agora
                                 ? '<span style="color:var(--green);font-weight:600">● Aberta agora</span>'
-                                : '<span style="color:var(--gray-400)">● Fechada</span>'}
+                                : '<span style="color:var(--red)">● Fechada agora</span>'}
                         </span>
                         <span>Horário: ${of.hora_abertura || ''}–${of.hora_fechamento || ''}</span>
                     </div>
@@ -166,9 +170,10 @@ async function load() {
                         Veículos: <strong>${of.tipos_veiculo || '—'}</strong>
                     </div>
                     <div class="oficina-actions">
+                        ${of.telefone ? `<a href="tel:${of.telefone}" class="btn btn-outline btn-sm">${Icons.phone(14)} Ligar</a>` : ''}
                         <a href="detalhe_oficina.html?id=${of.id}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center">Ver detalhes</a>
-                        <button type="button" class="fav-btn ${of.favoritada ? 'active' : ''}" data-fav="${of.id}" title="Favoritar">
-                            ${of.favoritada ? Icons.star(18, true) : Icons.star(18, false)}
+                        <button type="button" class="fav-btn active" data-fav="${of.id}" title="Remover dos favoritos">
+                            ${Icons.star(18, true)}
                         </button>
                     </div>
                 </div>

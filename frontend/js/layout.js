@@ -35,9 +35,8 @@ function renderLayout(active) {
     <ul class="sidebar-nav">
       <li><a href="dashboard.html" class="nav-link ${active === 'dashboard' ? 'active' : ''}"><span class="nav-icon">${Icons.dashboard()}</span> <span class="nav-label">Dashboard</span></a></li>
       <li><a href="ocorrencias.html" class="nav-link ${active === 'ocorrencias' ? 'active' : ''}"><span class="nav-icon">${Icons.alert()}</span> <span class="nav-label">Ocorrências</span></a></li>
-      <li><a href="orcamentos.html" class="nav-link ${active === 'orcamentos' ? 'active' : ''}"><span class="nav-icon">${Icons.wallet()}</span> <span class="nav-label">Orçamentos</span></a></li>
       <li><a href="frota.html" class="nav-link ${active === 'frota' ? 'active' : ''}"><span class="nav-icon">${Icons.truck()}</span> <span class="nav-label">Frota</span></a></li>
-      <li><a href="oficinas.html" class="nav-link ${active === 'oficinas' ? 'active' : ''}"><span class="nav-icon">${Icons.wrench()}</span> <span class="nav-label">Oficinas</span></a></li>
+      <li><a href="oficinas.html" class="nav-link ${active === 'oficinas' ? 'active' : ''}"><span class="nav-icon">${Icons.star(20, true)}</span> <span class="nav-label">Favoritas</span></a></li>
       <li><a href="relatorios.html" class="nav-link ${active === 'relatorios' ? 'active' : ''}"><span class="nav-icon">${Icons.chart()}</span> <span class="nav-label">Relatórios</span></a></li>
     </ul>
     <div class="sidebar-footer">

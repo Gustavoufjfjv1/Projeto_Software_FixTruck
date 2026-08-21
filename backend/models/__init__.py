@@ -4,7 +4,6 @@ from models.motorista import Motorista
 from models.veiculo import Veiculo
 from models.oficina import Oficina
 from models.ocorrencia import Ocorrencia
-from models.orcamento import Orcamento
 from models.favorito import Favorito
 
 __all__ = [
@@ -14,6 +13,5 @@ __all__ = [
     'Veiculo',
     'Oficina',
     'Ocorrencia',
-    'Orcamento',
     'Favorito',
 ]

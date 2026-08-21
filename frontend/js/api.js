@@ -114,6 +114,21 @@ function qs(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+// Volta para a página de onde o usuário realmente veio (via document.referrer),
+// em vez de sempre mandar para um hub fixo. Cai no fallback se vier de fora do app.
+function voltarPara(fallback) {
+  try {
+    const ref = document.referrer;
+    if (ref && ref.indexOf(window.location.origin + '/') === 0) {
+      const refUrl = new URL(ref);
+      if (refUrl.pathname !== window.location.pathname) {
+        return ref;
+      }
+    }
+  } catch (e) {}
+  return fallback;
+}
+
 function statusBadge(status) {
   if (status === 'aberta') {
     return '<span class="badge badge-red"><span class="status-dot dot-red"></span>Aberta</span>';

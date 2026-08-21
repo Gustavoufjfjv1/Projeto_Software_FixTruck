@@ -1,5 +1,7 @@
 import os
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
+from werkzeug.security import generate_password_hash
 
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'fixtruck.db')
 DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
@@ -7,11 +9,21 @@ DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
 db = SQLAlchemy()
 
 
+def _ensure_column(table, column, definition):
+    """Adiciona uma coluna em bancos já existentes (db.create_all() não altera tabelas)."""
+    inspector = inspect(db.engine)
+    colunas = [c['name'] for c in inspector.get_columns(table)]
+    if column not in colunas:
+        with db.engine.begin() as conn:
+            conn.execute(text(f'ALTER TABLE {table} ADD COLUMN {column} {definition}'))
+
+
 def init_db(app=None):
     """Cria tabelas e popula dados demo se necessário."""
-    from models import Empresa, Motorista, Veiculo, Oficina, Ocorrencia, Orcamento  # noqa: F401
+    from models import Empresa, Motorista, Veiculo, Oficina, Ocorrencia  # noqa: F401
 
     db.create_all()
+    _ensure_column('ocorrencias', 'data_vinculacao', 'TEXT')
 
     if Oficina.query.count() == 0:
         oficinas = [
@@ -57,7 +69,7 @@ def init_db(app=None):
             empresa = Empresa(
                 nome='Transportadora Demo',
                 email='demo@fixtruck.com',
-                senha='123456',
+                senha=generate_password_hash('123456'),
                 qtd_caminhoes=12,
             )
             db.session.add(empresa)
@@ -124,18 +136,6 @@ def init_db(app=None):
             ]
             for oc in ocorrencias:
                 db.session.add(oc)
-            db.session.flush()
-
-            oc_atend = Ocorrencia.query.filter_by(
-                empresa_id=empresa.id, status='em_atendimento'
-            ).first()
-            if oc_atend and Orcamento.query.count() == 0:
-                db.session.add(Orcamento(
-                    ocorrencia_id=oc_atend.id, oficina_id=3,
-                    valor_pecas=850.00, valor_mao_obra=320.00,
-                    descricao='Troca de alternador e revisão elétrica',
-                    status='pendente',
-                ))
 
         db.session.commit()
 
@@ -167,16 +167,8 @@ def init_db(app=None):
                 ))
             db.session.commit()
 
-        if Orcamento.query.count() == 0:
-            oc = Ocorrencia.query.filter(
-                Ocorrencia.empresa_id == empresa.id,
-                Ocorrencia.status.in_(['em_atendimento', 'aberta']),
-            ).first()
-            if oc:
-                db.session.add(Orcamento(
-                    ocorrencia_id=oc.id, oficina_id=3,
-                    valor_pecas=850.00, valor_mao_obra=320.00,
-                    descricao='Troca de alternador e revisão elétrica',
-                    status='pendente',
-                ))
-                db.session.commit()
+    # Migra senhas antigas em texto puro para hash (upgrade de bancos criados antes do hashing)
+    for empresa in Empresa.query.all():
+        if empresa.senha and not empresa.senha.startswith(('pbkdf2:', 'scrypt:')):
+            empresa.senha = generate_password_hash(empresa.senha)
+    db.session.commit()
