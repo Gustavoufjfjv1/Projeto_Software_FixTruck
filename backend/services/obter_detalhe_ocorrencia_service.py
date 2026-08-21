@@ -1,6 +1,7 @@
 from models import Oficina
-from repositories import OcorrenciaRepository, OrcamentoRepository
+from repositories import OcorrenciaRepository, FavoritoRepository
 from services.erros import ServiceError
+from utils import minutos_entre
 
 
 class ObterDetalheOcorrenciaService:
@@ -8,8 +9,14 @@ class ObterDetalheOcorrenciaService:
         oc = OcorrenciaRepository.buscar_detalhe(ocorrencia_id, empresa_id)
         if not oc:
             raise ServiceError('Ocorrência não encontrada.', 404)
+
+        oc['tempo_ate_oficina_min'] = minutos_entre(oc.get('data_abertura'), oc.get('data_vinculacao'))
+        oc['tempo_total_min'] = minutos_entre(oc.get('data_abertura'), oc.get('data_encerramento'))
+        oc['oficina_favoritada'] = (
+            FavoritoRepository.buscar_par(empresa_id, oc['oficina_id']) is not None
+            if oc.get('oficina_id') else None
+        )
         return {
             'ocorrencia': oc,
-            'orcamentos': OrcamentoRepository.listar_por_ocorrencia(ocorrencia_id),
             'oficinas': [o.to_dict() for o in Oficina.query.filter_by(ativa=1).order_by(Oficina.nome).all()],
         }

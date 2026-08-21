@@ -32,6 +32,18 @@ def oficina_aberta_agora(hora_abertura, hora_fechamento):
     return minutos_agora >= minutos_ab or minutos_agora < minutos_fe
 
 
+def minutos_entre(inicio, fim):
+    if not inicio or not fim:
+        return None
+    fmt = '%Y-%m-%d %H:%M:%S'
+    try:
+        dt_inicio = datetime.strptime(str(inicio)[:19], fmt)
+        dt_fim = datetime.strptime(str(fim)[:19], fmt)
+    except ValueError:
+        return None
+    return round((dt_fim - dt_inicio).total_seconds() / 60)
+
+
 def row_to_dict(row):
     if row is None:
         return None

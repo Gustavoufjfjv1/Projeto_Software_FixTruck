@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, g
+from flask import Blueprint, jsonify, g, request
 from auth import login_required
 from services import GerarRelatorioService
 
@@ -11,7 +11,8 @@ class RelatorioController:
         self.bp.add_url_rule('', view_func=login_required(self.obter), methods=['GET'])
 
     def obter(self):
-        return jsonify(GerarRelatorioService().executar(g.empresa_id))
+        periodo = request.args.get('periodo', '')
+        return jsonify(GerarRelatorioService().executar(g.empresa_id, periodo))
 
 
 relatorio_controller = RelatorioController()

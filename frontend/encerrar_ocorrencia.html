@@ -32,13 +32,32 @@ if (!id) {
         const oficinas = data.oficinas || [];
 
         document.title = `Encerrar Ocorrência — FixTruck`;
+
+        if (oc.status === 'resolvido') {
+            document.getElementById('page-root').innerHTML = `
+                <div class="page-header">
+                    <div><h1>Ocorrência #${oc.id} já resolvida</h1></div>
+                    <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
+                </div>
+                <div class="card" style="max-width:600px">
+                    <div class="alert alert-info">
+                        Esta ocorrência já foi encerrada em ${formatDate(oc.data_encerramento)},
+                        com a oficina <strong>${oc.oficina_nome || '—'}</strong>. Não é possível encerrá-la novamente.
+                    </div>
+                    <a href="detalhe_ocorrencia.html?id=${id}" class="btn btn-primary btn-full">Ver detalhes da ocorrência</a>
+                </div>
+            `;
+            hydrateIcons();
+            return;
+        }
+
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
                 <div>
                     <h1>Encerrar Ocorrência #${oc.id}</h1>
                     <p>Altere o status da ocorrência ativa para <strong>resolvido</strong></p>
                 </div>
-                <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
+                <a href="${voltarPara('ocorrencias.html')}" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
             </div>
 
             <div class="grid-2" style="max-width:900px">
@@ -111,7 +130,7 @@ if (!id) {
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
                 <div><h1>Encerrar Ocorrência</h1></div>
-                <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
+                <a href="${voltarPara('ocorrencias.html')}" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
             </div>
         `;
     }

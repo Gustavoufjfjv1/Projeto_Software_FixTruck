@@ -1,3 +1,5 @@
+from werkzeug.security import generate_password_hash
+
 from models import Empresa
 from services.erros import ServiceError
 
@@ -11,11 +13,13 @@ class CadastrarEmpresaService:
 
         if not nome or not email or not senha:
             raise ServiceError('Nome, e-mail e senha são obrigatórios.', 400)
+        if len(senha) < 6:
+            raise ServiceError('A senha deve ter ao menos 6 caracteres.', 400)
         if Empresa.buscar_por_email(email):
             raise ServiceError('Email já cadastrado.', 409)
 
         empresa = Empresa(
-            nome=nome, email=email, senha=senha, qtd_caminhoes=qtd_caminhoes
+            nome=nome, email=email, senha=generate_password_hash(senha), qtd_caminhoes=qtd_caminhoes
         )
         empresa.salvar()
         return {'mensagem': 'Cadastro realizado! Faça login.'}
