@@ -82,7 +82,7 @@ async function load() {
                     <button type="button" class="btn btn-outline" id="favBtn">
                         ${favoritada ? Icons.star(16, true) + ' Favoritada' : Icons.star(16, false) + ' Favoritar'}
                     </button>
-                    <a href="oficinas.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
+                    <a href="${voltarPara('oficinas.html')}" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
                 </div>
             </div>
 
@@ -165,7 +165,7 @@ async function load() {
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
                 <div><h1>Oficina</h1></div>
-                <a href="oficinas.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
+                <a href="${voltarPara('oficinas.html')}" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
             </div>
         `;
     }

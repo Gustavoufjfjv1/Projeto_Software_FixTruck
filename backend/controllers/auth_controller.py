@@ -4,6 +4,8 @@ from services import (
     CadastrarEmpresaService,
     AutenticarEmpresaService,
     ObterEmpresaAutenticadaService,
+    RecuperarSenhaService,
+    RedefinirSenhaService,
     ServiceError,
 )
 
@@ -16,6 +18,8 @@ class AuthController:
         self.bp.add_url_rule('/cadastro', view_func=self.cadastrar, methods=['POST'])
         self.bp.add_url_rule('/login', view_func=self.login, methods=['POST'])
         self.bp.add_url_rule('/me', view_func=login_required(self.me), methods=['GET'])
+        self.bp.add_url_rule('/recuperar-senha', view_func=self.recuperar_senha, methods=['POST'])
+        self.bp.add_url_rule('/redefinir-senha', view_func=self.redefinir_senha, methods=['POST'])
 
     def cadastrar(self):
         try:
@@ -33,6 +37,18 @@ class AuthController:
     def me(self):
         try:
             return jsonify(ObterEmpresaAutenticadaService().executar(g.empresa_id))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
+    def recuperar_senha(self):
+        try:
+            return jsonify(RecuperarSenhaService().executar(request.get_json(silent=True) or {}))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
+    def redefinir_senha(self):
+        try:
+            return jsonify(RedefinirSenhaService().executar(request.get_json(silent=True) or {}))
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
 

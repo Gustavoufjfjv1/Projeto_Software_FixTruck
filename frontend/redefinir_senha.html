@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha — FIXTRUCK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-shell">
+    <a href="login.html" class="auth-back"><span data-icon="arrowLeft" data-size="16"></span> Voltar ao login</a>
+
+    <div class="auth-layout">
+        <div class="auth-card">
+            <div class="auth-card-top">
+                <span class="brand-pill">
+                    <img src="img/logo-truck.svg" alt="" class="brand-pill-icon">
+                    FIX<strong>TRUCK</strong>
+                </span>
+            </div>
+            <div class="auth-card-body">
+                <h1>Redefinir Senha</h1>
+                <p class="auth-card-sub">Cole o código recebido e escolha a nova senha</p>
+
+                <div id="alert-box"></div>
+
+                <form id="redefinirForm">
+                    <div class="form-group">
+                        <label>Código de recuperação</label>
+                        <input type="text" name="token" id="token" required style="font-family:monospace;font-size:12px">
+                    </div>
+                    <div class="form-group">
+                        <label>Nova senha</label>
+                        <input type="password" name="senha" id="senha" placeholder="Mínimo 6 caracteres" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>Confirmar nova senha</label>
+                        <input type="password" name="confirmar" id="confirmar" placeholder="Repita a nova senha" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-neon btn-full btn-lg" id="submitBtn">Redefinir senha <span class="icon-end" data-icon="arrowRight" data-size="18"></span></button>
+                </form>
+
+                <p class="auth-footer-text">
+                    Não recebeu o código? <a href="recuperar_senha.html">Gerar novamente</a>
+                </p>
+            </div>
+        </div>
+
+        <aside class="auth-aside">
+            <h2>Segurança</h2>
+            <ul class="auth-aside-list">
+                <li>
+                    <span class="aside-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    </span>
+                    <div>
+                        <strong>Senhas com hash</strong>
+                        <p>Suas senhas nunca são guardadas em texto puro no banco de dados.</p>
+                    </div>
+                </li>
+                <li>
+                    <span class="aside-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </span>
+                    <div>
+                        <strong>Código temporário</strong>
+                        <p>O código de recuperação expira em 30 minutos por segurança.</p>
+                    </div>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/icons.js"></script>
+    <script>
+    const tokenQs = qs('token');
+    if (tokenQs) document.getElementById('token').value = tokenQs;
+
+    document.getElementById('redefinirForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertBox = document.getElementById('alert-box');
+        const submitBtn = document.getElementById('submitBtn');
+        alertBox.innerHTML = '';
+
+        const senha = document.getElementById('senha').value;
+        const confirmar = document.getElementById('confirmar').value;
+        if (senha !== confirmar) {
+            alertBox.innerHTML = '<div class="alert alert-warning">As senhas informadas não coincidem.</div>';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        try {
+            const token = document.getElementById('token').value.trim();
+            const data = await Api.post('/api/auth/redefinir-senha', { token, senha });
+            showFlash(data.mensagem || 'Senha redefinida.', 'success');
+            setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+        } catch (err) {
+            alertBox.innerHTML = `<div class="alert alert-warning">${err.message}</div>`;
+            submitBtn.disabled = false;
+        }
+    });
+    </script>
+</body>
+</html>
