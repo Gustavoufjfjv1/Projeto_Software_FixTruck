@@ -3,6 +3,16 @@ from models import Ocorrencia
 from utils import row_to_dict, rows_to_list
 
 
+def _sql_periodo(periodo, coluna='o.data_abertura'):
+    if periodo == '7d':
+        return f" AND {coluna} >= datetime('now', '-7 days')"
+    if periodo == '30d':
+        return f" AND {coluna} >= datetime('now', '-30 days')"
+    if periodo == '90d':
+        return f" AND {coluna} >= datetime('now', '-90 days')"
+    return ''
+
+
 class OcorrenciaRepository:
     """Consultas complexas de ocorrências (SQL puro)."""
 
@@ -28,13 +38,7 @@ class OcorrenciaRepository:
         elif status:
             query += ' AND o.status=?'
             params.append(status)
-        periodo = filtros.get('periodo', '')
-        if periodo == '7d':
-            query += " AND o.data_abertura >= datetime('now', '-7 days')"
-        elif periodo == '30d':
-            query += " AND o.data_abertura >= datetime('now', '-30 days')"
-        elif periodo == '90d':
-            query += " AND o.data_abertura >= datetime('now', '-90 days')"
+        query += _sql_periodo(filtros.get('periodo', ''))
         query += ' ORDER BY o.data_abertura DESC'
         return rows_to_list(get_db().execute(query, params).fetchall())
 
@@ -68,26 +72,38 @@ class OcorrenciaRepository:
         ).fetchone()['c']
 
     @staticmethod
-    def contar_total(empresa_id):
+    def contar_total(empresa_id, periodo=''):
+        sql = 'SELECT COUNT(*) as c FROM ocorrencias o WHERE o.empresa_id=?' + _sql_periodo(periodo)
+        return get_db().execute(sql, (empresa_id,)).fetchone()['c']
+
+    @staticmethod
+    def contar_por_status(empresa_id, status, periodo=''):
+        sql = 'SELECT COUNT(*) as c FROM ocorrencias o WHERE o.empresa_id=? AND o.status=?' + _sql_periodo(periodo)
+        return get_db().execute(sql, (empresa_id, status)).fetchone()['c']
+
+    @staticmethod
+    def contar_veiculos_atendidos(empresa_id):
         return get_db().execute(
-            'SELECT COUNT(*) as c FROM ocorrencias WHERE empresa_id=?',
+            """SELECT COUNT(DISTINCT veiculo_id) as c FROM ocorrencias
+               WHERE empresa_id=? AND veiculo_id IS NOT NULL""",
             (empresa_id,),
         ).fetchone()['c']
 
     @staticmethod
-    def contar_por_status(empresa_id, status):
-        return get_db().execute(
-            'SELECT COUNT(*) as c FROM ocorrencias WHERE empresa_id=? AND status=?',
-            (empresa_id, status),
-        ).fetchone()['c']
+    def tempo_medio_resolucao(empresa_id, periodo=''):
+        sql = """SELECT AVG((julianday(data_encerramento) - julianday(data_abertura)) * 24 * 60) as avg
+                 FROM ocorrencias o
+                 WHERE o.empresa_id=? AND o.status='resolvido' AND o.data_encerramento IS NOT NULL"""
+        sql += _sql_periodo(periodo)
+        return get_db().execute(sql, (empresa_id,)).fetchone()['avg']
 
     @staticmethod
-    def tempo_medio_resolucao(empresa_id):
-        return get_db().execute(
-            """SELECT AVG((julianday(data_encerramento) - julianday(data_abertura)) * 24 * 60) as avg
-               FROM ocorrencias WHERE empresa_id=? AND status='resolvido' AND data_encerramento IS NOT NULL""",
-            (empresa_id,),
-        ).fetchone()['avg']
+    def tempo_medio_ate_oficina(empresa_id, periodo=''):
+        sql = """SELECT AVG((julianday(data_vinculacao) - julianday(data_abertura)) * 24 * 60) as avg
+                 FROM ocorrencias o
+                 WHERE o.empresa_id=? AND o.data_vinculacao IS NOT NULL"""
+        sql += _sql_periodo(periodo)
+        return get_db().execute(sql, (empresa_id,)).fetchone()['avg']
 
     @staticmethod
     def problema_mais_comum(empresa_id):
@@ -122,26 +138,36 @@ class OcorrenciaRepository:
         return rows_to_list(rows)
 
     @staticmethod
-    def agregados_relatorio(empresa_id):
+    def agregados_relatorio(empresa_id, periodo=''):
         db = get_db()
+        where = 'WHERE o.empresa_id=?' + _sql_periodo(periodo)
+        params = (empresa_id,)
         por_tipo = db.execute(
-            'SELECT tipo_problema, COUNT(*) as c FROM ocorrencias WHERE empresa_id=? GROUP BY tipo_problema',
-            (empresa_id,),
+            f'SELECT o.tipo_problema, COUNT(*) as c FROM ocorrencias o {where} GROUP BY o.tipo_problema',
+            params,
         ).fetchall()
         por_veiculo = db.execute(
-            """SELECT COALESCE(v.placa, o.tipo_veiculo) as veiculo, COUNT(*) as c
-               FROM ocorrencias o LEFT JOIN veiculos v ON o.veiculo_id = v.id
-               WHERE o.empresa_id=? GROUP BY veiculo""",
-            (empresa_id,),
+            f"""SELECT COALESCE(v.placa, o.tipo_veiculo) as veiculo, COUNT(*) as c
+                FROM ocorrencias o LEFT JOIN veiculos v ON o.veiculo_id = v.id
+                {where} GROUP BY veiculo""",
+            params,
         ).fetchall()
         por_mes = db.execute(
-            """SELECT strftime('%m/%Y', data_abertura) as mes, COUNT(*) as c
-               FROM ocorrencias WHERE empresa_id=?
-               GROUP BY mes ORDER BY data_abertura DESC LIMIT 6""",
-            (empresa_id,),
+            f"""SELECT strftime('%m/%Y', o.data_abertura) as mes, COUNT(*) as c
+                FROM ocorrencias o {where}
+                GROUP BY mes ORDER BY o.data_abertura DESC LIMIT 6""",
+            params,
+        ).fetchall()
+        ranking_oficinas = db.execute(
+            f"""SELECT of.nome, COUNT(*) as c FROM ocorrencias o
+                JOIN oficinas of ON o.oficina_id = of.id
+                {where} AND o.oficina_id IS NOT NULL
+                GROUP BY of.nome ORDER BY c DESC LIMIT 5""",
+            params,
         ).fetchall()
         return {
             'por_tipo': rows_to_list(por_tipo),
             'por_veiculo': rows_to_list(por_veiculo),
             'por_mes': rows_to_list(por_mes),
+            'ranking_oficinas': rows_to_list(ranking_oficinas),
         }

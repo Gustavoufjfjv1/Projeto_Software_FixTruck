@@ -4,6 +4,7 @@ from services import (
     ListarOcorrenciasService,
     ObterDadosFormularioOcorrenciaService,
     RegistrarOcorrenciaService,
+    AtualizarOcorrenciaService,
     ObterDetalheOcorrenciaService,
     BuscarOficinasParaOcorrenciaService,
     EncerrarOcorrenciaService,
@@ -25,6 +26,9 @@ class OcorrenciaController:
         self.bp.add_url_rule('', view_func=login_required(self.criar), methods=['POST'])
         self.bp.add_url_rule(
             '/<int:ocorrencia_id>', view_func=login_required(self.detalhe), methods=['GET']
+        )
+        self.bp.add_url_rule(
+            '/<int:ocorrencia_id>', view_func=login_required(self.editar), methods=['PUT']
         )
         self.bp.add_url_rule(
             '/<int:ocorrencia_id>/buscar-oficinas',
@@ -71,6 +75,14 @@ class OcorrenciaController:
     def detalhe(self, ocorrencia_id):
         try:
             return jsonify(ObterDetalheOcorrenciaService().executar(g.empresa_id, ocorrencia_id))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
+    def editar(self, ocorrencia_id):
+        try:
+            return jsonify(AtualizarOcorrenciaService().executar(
+                g.empresa_id, ocorrencia_id, request.get_json(silent=True) or {}
+            ))
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
 

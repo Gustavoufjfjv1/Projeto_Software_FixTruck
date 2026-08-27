@@ -15,7 +15,7 @@
             <h1>Nova Ocorrência</h1>
             <p>Registro pelo motorista: informe o problema mecânico e o local da ocorrência</p>
         </div>
-        <a href="ocorrencias.html" class="btn btn-outline"><span data-icon="arrowLeft" data-size="16"></span> Voltar</a>
+        <a href="ocorrencias.html" id="btnVoltar" class="btn btn-outline"><span data-icon="arrowLeft" data-size="16"></span> Voltar</a>
     </div>
 
     <div class="card">
@@ -77,6 +77,7 @@
                     <input type="text" name="cidade" id="cidade" placeholder="Ex: Campinas/SP">
                 </div>
             </div>
+            <div id="enderecoStatus" style="font-size:12px;color:var(--gray-400);margin:-8px 0 16px"></div>
 
             <div class="form-group">
                 <label>Localização atual (GPS) — opcional</label>
@@ -102,9 +103,12 @@
 <script src="js/api.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
+<script src="js/geo.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('ocorrencias');
+
+document.getElementById('btnVoltar').href = voltarPara('ocorrencias.html');
 
 document.getElementById('veiculo_id').addEventListener('change', () => {
     const opt = document.getElementById('veiculo_id').selectedOptions[0];
@@ -117,6 +121,44 @@ document.getElementById('veiculo_id').addEventListener('change', () => {
 
 const btn = document.getElementById('locBtn');
 const status = document.getElementById('locStatus');
+const enderecoStatus = document.getElementById('enderecoStatus');
+
+async function preencherEnderecoPorGps(lat, lon) {
+    const resultado = await Geo.enderecoPorCoordenadas(lat, lon);
+    if (!resultado) return false;
+    const campoVia = document.getElementById('via');
+    const campoCidade = document.getElementById('cidade');
+    if (resultado.via && !campoVia.value) campoVia.value = resultado.via;
+    if (resultado.cidade && !campoCidade.value) campoCidade.value = resultado.cidade;
+    return Boolean(resultado.via || resultado.cidade);
+}
+
+// Quando o endereço é digitado manualmente (sem GPS), busca as coordenadas
+// automaticamente para que a busca por distância continue funcionando.
+async function tentarGeocodificarEndereco() {
+    const lat = document.getElementById('lat');
+    const lon = document.getElementById('lon');
+    if (lat.value && lon.value) return; // já tem coordenadas (GPS já usado)
+
+    const via = document.getElementById('via').value.trim();
+    const cidade = document.getElementById('cidade').value.trim();
+    if (!via && !cidade) return;
+
+    enderecoStatus.textContent = 'Localizando endereço...';
+    const coords = await Geo.coordenadasPorEndereco(via, cidade);
+    if (coords) {
+        lat.value = coords.lat;
+        lon.value = coords.lon;
+        enderecoStatus.textContent = 'Endereço localizado — a busca por oficinas poderá filtrar por distância.';
+        enderecoStatus.style.color = 'var(--green-dark)';
+    } else {
+        enderecoStatus.textContent = 'Não foi possível localizar este endereço automaticamente. A ocorrência ainda pode ser registrada, mas a busca por distância pode não funcionar.';
+        enderecoStatus.style.color = 'var(--gray-400)';
+    }
+}
+
+document.getElementById('via').addEventListener('blur', tentarGeocodificarEndereco);
+document.getElementById('cidade').addEventListener('blur', tentarGeocodificarEndereco);
 
 btn.addEventListener('click', () => {
     btn.disabled = true;
@@ -126,13 +168,20 @@ btn.addEventListener('click', () => {
         btn.disabled = false;
         return;
     }
-    navigator.geolocation.getCurrentPosition((pos) => {
-        document.getElementById('lat').value = pos.coords.latitude;
-        document.getElementById('lon').value = pos.coords.longitude;
-        status.textContent = `Localização capturada: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        document.getElementById('lat').value = lat;
+        document.getElementById('lon').value = lon;
+        status.textContent = `Localização capturada: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Buscando endereço...`;
         status.style.color = 'var(--green-dark)';
         btn.textContent = 'Localização capturada ✓';
         btn.disabled = false;
+
+        const preencheu = await preencherEnderecoPorGps(lat, lon);
+        status.textContent = preencheu
+            ? `Localização capturada: ${lat.toFixed(5)}, ${lon.toFixed(5)} — endereço preenchido automaticamente, confira antes de enviar.`
+            : `Localização capturada: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Não foi possível identificar o endereço — preencha manualmente se necessário.`;
     }, () => {
         status.textContent = 'Não foi possível obter a localização GPS. Verifique as permissões do navegador.';
         status.style.color = 'var(--red)';
@@ -143,6 +192,7 @@ btn.addEventListener('click', () => {
 
 document.getElementById('ocForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    await tentarGeocodificarEndereco();
     const via = document.getElementById('via').value.trim();
     const km = document.getElementById('km').value.trim();
     const cidade = document.getElementById('cidade').value.trim();

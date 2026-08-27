@@ -18,6 +18,21 @@ def validar_token(token, max_age=60 * 60 * 24 * 7):
         return None
 
 
+def _serializer_recuperacao():
+    return URLSafeTimedSerializer(current_app.secret_key, salt='fixtruck-recuperacao-senha')
+
+
+def gerar_token_recuperacao(empresa_id):
+    return _serializer_recuperacao().dumps({'empresa_id': empresa_id})
+
+
+def validar_token_recuperacao(token, max_age=60 * 30):
+    try:
+        return _serializer_recuperacao().loads(token, max_age=max_age)
+    except (BadSignature, SignatureExpired):
+        return None
+
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):

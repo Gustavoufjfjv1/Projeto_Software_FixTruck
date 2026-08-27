@@ -36,7 +36,12 @@ class OficinaRepository:
                     continue
             resultado.append(of_dict)
         if lat is not None and lon is not None:
-            resultado.sort(key=lambda x: x['distancia'] if x['distancia'] is not None else 9999)
+            resultado.sort(
+                key=lambda x: (
+                    0 if x['aberta_agora'] else 1,
+                    x['distancia'] if x['distancia'] is not None else 9999,
+                )
+            )
         return resultado
 
     @staticmethod
@@ -66,10 +71,21 @@ class OficinaRepository:
                 (empresa_id, of.id),
             ).fetchone()
             of_dict['favoritada'] = fav is not None
+            of_dict['compatibilidade'] = int(of_dict['atende_tipo']) + int(of_dict['atende_veiculo'])
+            of_dict['recomendada'] = bool(
+                of_dict['atende_tipo'] and of_dict['atende_veiculo'] and of_dict['aberta_agora']
+                and (of_dict.get('tem_guincho') if ocorrencia.pane_total else True)
+            )
             oficinas.append(of_dict)
 
-        if ocorrencia.pane_total:
-            oficinas.sort(key=lambda x: (not x.get('tem_guincho', False), x['distancia'] or 9999))
-        else:
-            oficinas.sort(key=lambda x: (x['distancia'] or 9999))
+        def chave_ordenacao(of):
+            sem_guincho_penaliza = 1 if (ocorrencia.pane_total and not of.get('tem_guincho')) else 0
+            return (
+                sem_guincho_penaliza,
+                -of['compatibilidade'],
+                0 if of['aberta_agora'] else 1,
+                of['distancia'] if of['distancia'] is not None else 9999,
+            )
+
+        oficinas.sort(key=chave_ordenacao)
         return oficinas
