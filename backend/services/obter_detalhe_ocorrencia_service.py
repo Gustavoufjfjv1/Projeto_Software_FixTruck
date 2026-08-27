@@ -11,5 +11,5 @@ class ObterDetalheOcorrenciaService:
         return {
             'ocorrencia': oc,
             'orcamentos': OrcamentoRepository.listar_por_ocorrencia(ocorrencia_id),
-            'oficinas': [o.to_dict() for o in Oficina.query.filter_by(ativa=1).order_by(Oficina.nome).all()],
+            'oficinas': [o.to_dict() for o in Oficina.listar_ativas()],
         }

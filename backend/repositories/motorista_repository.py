@@ -1,27 +1,34 @@
-from models import Motorista, Veiculo
+from database import get_db
+from models import Motorista
+from utils import rows_to_list
 
 
 class MotoristaRepository:
-    """Consultas de motoristas com joins."""
+    """Consultas de motoristas com joins (SQL puro)."""
 
     @staticmethod
     def listar_por_empresa(empresa_id, apenas_ativos=False):
-        query = Motorista.query.filter_by(empresa_id=empresa_id)
+        query = 'SELECT * FROM motoristas WHERE empresa_id=?'
+        params = [empresa_id]
         if apenas_ativos:
-            query = query.filter_by(ativo=1)
-        return [m.to_dict() for m in query.order_by(Motorista.nome).all()]
+            query += ' AND ativo=1'
+        query += ' ORDER BY nome'
+        return rows_to_list(get_db().execute(query, params).fetchall())
 
     @staticmethod
     def listar_com_veiculo(empresa_id):
-        motoristas = Motorista.query.filter_by(empresa_id=empresa_id).order_by(Motorista.nome).all()
-        resultado = []
-        for m in motoristas:
-            veiculo = Veiculo.query.filter_by(motorista_id=m.id).first()
-            resultado.append(m.to_dict({
-                'veiculo_placa': veiculo.placa if veiculo else None,
-            }))
-        return resultado
+        rows = get_db().execute(
+            """SELECT m.*,
+                      (SELECT placa FROM veiculos WHERE motorista_id=m.id LIMIT 1) as veiculo_placa
+               FROM motoristas m WHERE m.empresa_id=? ORDER BY m.nome""",
+            (empresa_id,),
+        ).fetchall()
+        return rows_to_list(rows)
 
     @staticmethod
     def buscar_da_empresa(motorista_id, empresa_id):
-        return Motorista.query.filter_by(id=motorista_id, empresa_id=empresa_id).first()
+        row = get_db().execute(
+            'SELECT * FROM motoristas WHERE id=? AND empresa_id=?',
+            (motorista_id, empresa_id),
+        ).fetchone()
+        return Motorista.from_row(row)

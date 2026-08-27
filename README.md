@@ -18,7 +18,7 @@
 
 ### Back-end
 - Python (Flask) — API REST JSON
-- Flask-SQLAlchemy
+- SQLite com SQL puro (`sqlite3`)
 
 ### Banco de dados
 - SQLite
@@ -50,10 +50,10 @@ Também estão implementados no mesmo padrão: vincular motorista ao veículo, e
 fixtruck/
 ├── backend/              # API Flask (JSON)
 │   ├── app.py
-│   ├── database.py       # SQLAlchemy (db)
+│   ├── database.py       # SQLite (SQL puro)
 │   ├── controllers/      # Classes Controller por recurso
 │   ├── services/         # Um Service por caso de uso
-│   ├── models/           # Entidades (db.Model) com CRUD
+│   ├── models/           # Entidades com CRUD (SQL puro)
 │   ├── repositories/     # Consultas complexas / filtros / relatórios
 │   └── fixtruck.db
 └── frontend/             # Interface que consome a API

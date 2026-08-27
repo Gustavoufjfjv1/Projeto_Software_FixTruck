@@ -1,9 +1,14 @@
+from database import get_db
 from models import Favorito
 
 
 class FavoritoRepository:
-    """Consultas específicas de favoritos."""
+    """Consultas específicas de favoritos (SQL puro)."""
 
     @staticmethod
     def buscar_par(empresa_id, oficina_id):
-        return Favorito.query.filter_by(empresa_id=empresa_id, oficina_id=oficina_id).first()
+        row = get_db().execute(
+            'SELECT * FROM favoritos WHERE empresa_id=? AND oficina_id=?',
+            (empresa_id, oficina_id),
+        ).fetchone()
+        return Favorito.from_row(row)

@@ -7,7 +7,7 @@ class AutenticarEmpresaService:
     def executar(self, dados):
         email = (dados.get('email') or '').strip().lower()
         senha = dados.get('senha') or ''
-        empresa = Empresa.query.filter_by(email=email, senha=senha).first()
+        empresa = Empresa.autenticar(email, senha)
         if not empresa:
             raise ServiceError('Email ou senha incorretos.', 401)
         return {
