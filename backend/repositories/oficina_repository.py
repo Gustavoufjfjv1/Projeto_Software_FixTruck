@@ -1,19 +1,21 @@
-from models import Oficina, Favorito
+from database import get_db
+from models import Oficina
 from utils import haversine, oficina_aberta_agora
 
 
 class OficinaRepository:
-    """Consultas e enriquecimento de oficinas (busca, distância, favoritos)."""
+    """Consultas e enriquecimento de oficinas (SQL puro)."""
 
     @staticmethod
     def listar_ativas(busca=''):
-        query = Oficina.query.filter_by(ativa=1)
+        query = 'SELECT * FROM oficinas WHERE ativa=1'
+        params = []
         if busca:
-            like = f'%{busca}%'
-            query = query.filter(
-                db_or_nome_especialidade(like)
-            )
-        return query.order_by(Oficina.nome).all()
+            query += ' AND (nome LIKE ? OR especialidades LIKE ?)'
+            params.extend([f'%{busca}%', f'%{busca}%'])
+        query += ' ORDER BY nome'
+        rows = get_db().execute(query, params).fetchall()
+        return [Oficina.from_row(r) for r in rows]
 
     @staticmethod
     def listar_com_contexto(empresa_id, busca='', raio=None, lat=None, lon=None):
@@ -21,7 +23,10 @@ class OficinaRepository:
         resultado = []
         for of in oficinas:
             of_dict = of.to_dict()
-            fav = Favorito.query.filter_by(empresa_id=empresa_id, oficina_id=of.id).first()
+            fav = get_db().execute(
+                'SELECT id FROM favoritos WHERE empresa_id=? AND oficina_id=?',
+                (empresa_id, of.id),
+            ).fetchone()
             of_dict['favoritada'] = fav is not None
             of_dict['aberta_agora'] = oficina_aberta_agora(of.hora_abertura, of.hora_fechamento)
             of_dict['distancia'] = None
@@ -56,9 +61,11 @@ class OficinaRepository:
             of_dict['aberta_agora'] = oficina_aberta_agora(of.hora_abertura, of.hora_fechamento)
             of_dict['atende_tipo'] = ocorrencia.tipo_problema.lower() in (of.especialidades or '').lower()
             of_dict['atende_veiculo'] = ocorrencia.tipo_veiculo.lower() in (of.tipos_veiculo or '').lower()
-            of_dict['favoritada'] = Favorito.query.filter_by(
-                empresa_id=empresa_id, oficina_id=of.id
-            ).first() is not None
+            fav = get_db().execute(
+                'SELECT id FROM favoritos WHERE empresa_id=? AND oficina_id=?',
+                (empresa_id, of.id),
+            ).fetchone()
+            of_dict['favoritada'] = fav is not None
             oficinas.append(of_dict)
 
         if ocorrencia.pane_total:
@@ -66,8 +73,3 @@ class OficinaRepository:
         else:
             oficinas.sort(key=lambda x: (x['distancia'] or 9999))
         return oficinas
-
-
-def db_or_nome_especialidade(like):
-    from sqlalchemy import or_
-    return or_(Oficina.nome.like(like), Oficina.especialidades.like(like))
