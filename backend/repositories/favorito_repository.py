@@ -8,7 +8,9 @@ class FavoritoRepository:
     @staticmethod
     def buscar_par(empresa_id, oficina_id):
         row = get_db().execute(
-            'SELECT * FROM favoritos WHERE empresa_id=? AND oficina_id=?',
+            'SELECT id FROM favoritos WHERE empresa_id=? AND oficina_id=?',
             (empresa_id, oficina_id),
         ).fetchone()
-        return Favorito.from_row(row)
+        if not row:
+            return None
+        return Favorito.buscar_por_id(row['id'])

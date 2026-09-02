@@ -27,7 +27,9 @@ class VeiculoRepository:
     @staticmethod
     def buscar_da_empresa(veiculo_id, empresa_id):
         row = get_db().execute(
-            'SELECT * FROM veiculos WHERE id=? AND empresa_id=?',
+            'SELECT id FROM veiculos WHERE id=? AND empresa_id=?',
             (veiculo_id, empresa_id),
         ).fetchone()
-        return Veiculo.from_row(row)
+        if not row:
+            return None
+        return Veiculo.buscar_por_id(row['id'])

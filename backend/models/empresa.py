@@ -1,9 +1,16 @@
+from database import db
 from models.base import ModeloBase
 
 
 class Empresa(ModeloBase):
-    tabela = 'empresas'
-    campos = ('nome', 'email', 'senha', 'qtd_caminhoes')
+    __tablename__ = 'empresas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String, nullable=False)
+    email = db.Column(db.String, unique=True, nullable=False)
+    senha = db.Column(db.String, nullable=False)
+    qtd_caminhoes = db.Column(db.Integer, default=0)
+    criado_em = db.Column(db.DateTime, server_default=db.func.current_timestamp())
 
     def to_dict_publico(self):
         return {
@@ -12,18 +19,3 @@ class Empresa(ModeloBase):
             'email': self.email,
             'qtd_caminhoes': self.qtd_caminhoes,
         }
-
-    @classmethod
-    def buscar_por_email(cls, email):
-        row = cls._db().execute(
-            'SELECT * FROM empresas WHERE email=?', (email,)
-        ).fetchone()
-        return cls.from_row(row)
-
-    @classmethod
-    def autenticar(cls, email, senha):
-        row = cls._db().execute(
-            'SELECT * FROM empresas WHERE email=? AND senha=?',
-            (email, senha),
-        ).fetchone()
-        return cls.from_row(row)

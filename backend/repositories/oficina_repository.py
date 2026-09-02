@@ -15,7 +15,12 @@ class OficinaRepository:
             params.extend([f'%{busca}%', f'%{busca}%'])
         query += ' ORDER BY nome'
         rows = get_db().execute(query, params).fetchall()
-        return [Oficina.from_row(r) for r in rows]
+        oficinas = []
+        for r in rows:
+            of = Oficina.buscar_por_id(r['id'])
+            if of:
+                oficinas.append(of)
+        return oficinas
 
     @staticmethod
     def listar_com_contexto(empresa_id, busca='', raio=None, lat=None, lon=None):
