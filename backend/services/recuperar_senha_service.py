@@ -1,4 +1,4 @@
-from models import Empresa
+from repositories import EmpresaRepository
 from auth import gerar_token_recuperacao
 from services.erros import ServiceError
 
@@ -6,7 +6,7 @@ from services.erros import ServiceError
 class RecuperarSenhaService:
     def executar(self, dados):
         email = (dados.get('email') or '').strip().lower()
-        empresa = Empresa.buscar_por_email(email)
+        empresa = EmpresaRepository.buscar_por_email(email)
         if not empresa:
             raise ServiceError('Não existe conta cadastrada com este e-mail.', 404)
 

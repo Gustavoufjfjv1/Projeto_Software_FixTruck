@@ -1,129 +1,57 @@
-import sqlite3
 import os
+import sqlite3
 from flask import g
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
 
-DATABASE = os.path.join(os.path.dirname(__file__), 'fixtruck.db')
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'fixtruck.db')
+DATABASE_URI = f'sqlite:///{DATABASE_PATH}'
+
+db = SQLAlchemy()
 
 
 def get_db():
-    if 'db' not in g:
-        g.db = sqlite3.connect(DATABASE)
-        g.db.row_factory = sqlite3.Row
-    return g.db
+    """Conexão sqlite3 para consultas SQL puro nos Repositories."""
+    if 'sqlite_db' not in g:
+        g.sqlite_db = sqlite3.connect(DATABASE_PATH)
+        g.sqlite_db.row_factory = sqlite3.Row
+    return g.sqlite_db
+
+
+def _ensure_column(conn, table, column, definition):
+    cols = [r[1] for r in conn.execute(f'PRAGMA table_info({table})').fetchall()]
+    if column not in cols:
+        conn.execute(f'ALTER TABLE {table} ADD COLUMN {column} {definition}')
 
 
 def init_db():
-    db = sqlite3.connect(DATABASE)
-    db.row_factory = sqlite3.Row
-    db.executescript('''
-        CREATE TABLE IF NOT EXISTS empresas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            senha TEXT NOT NULL,
-            qtd_caminhoes INTEGER DEFAULT 0,
-            criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
+    """Cria tabelas (SQLAlchemy) e popula dados demo se necessário."""
+    from models import Empresa, Motorista, Veiculo, Oficina, Ocorrencia, Favorito  # noqa: F401
 
-        CREATE TABLE IF NOT EXISTS motoristas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            empresa_id INTEGER NOT NULL,
-            nome TEXT NOT NULL,
-            cnh TEXT,
-            telefone TEXT,
-            ativo INTEGER DEFAULT 1,
-            FOREIGN KEY (empresa_id) REFERENCES empresas(id)
-        );
+    db.create_all()
 
-        CREATE TABLE IF NOT EXISTS veiculos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            empresa_id INTEGER NOT NULL,
-            placa TEXT NOT NULL,
-            modelo TEXT,
-            marca TEXT,
-            tipo_veiculo TEXT NOT NULL DEFAULT 'pesado',
-            motorista_id INTEGER,
-            FOREIGN KEY (empresa_id) REFERENCES empresas(id),
-            FOREIGN KEY (motorista_id) REFERENCES motoristas(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS oficinas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            endereco TEXT,
-            telefone TEXT,
-            lat REAL,
-            lon REAL,
-            especialidades TEXT,
-            tipos_veiculo TEXT,
-            tem_guincho INTEGER DEFAULT 0,
-            hora_abertura TEXT DEFAULT '08:00',
-            hora_fechamento TEXT DEFAULT '18:00',
-            ativa INTEGER DEFAULT 1
-        );
-
-        CREATE TABLE IF NOT EXISTS ocorrencias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            empresa_id INTEGER NOT NULL,
-            motorista_id INTEGER,
-            veiculo_id INTEGER,
-            tipo_veiculo TEXT NOT NULL,
-            tipo_problema TEXT NOT NULL,
-            pane_total INTEGER DEFAULT 0,
-            lat TEXT,
-            lon TEXT,
-            endereco TEXT,
-            status TEXT DEFAULT 'aberta',
-            oficina_id INTEGER,
-            motivo_resolucao TEXT,
-            observacoes TEXT,
-            data_abertura DATETIME,
-            data_encerramento DATETIME,
-            data_vinculacao DATETIME,
-            FOREIGN KEY (empresa_id) REFERENCES empresas(id),
-            FOREIGN KEY (motorista_id) REFERENCES motoristas(id),
-            FOREIGN KEY (veiculo_id) REFERENCES veiculos(id),
-            FOREIGN KEY (oficina_id) REFERENCES oficinas(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS favoritos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            empresa_id INTEGER NOT NULL,
-            oficina_id INTEGER NOT NULL,
-            UNIQUE(empresa_id, oficina_id),
-            FOREIGN KEY (empresa_id) REFERENCES empresas(id),
-            FOREIGN KEY (oficina_id) REFERENCES oficinas(id)
-        );
-    ''')
-
-    def _ensure_column(table, column, definition):
-        cols = [r[1] for r in db.execute(f'PRAGMA table_info({table})').fetchall()]
-        if column not in cols:
-            db.execute(f'ALTER TABLE {table} ADD COLUMN {column} {definition}')
-
-    _ensure_column('ocorrencias', 'motorista_id', 'INTEGER')
-    _ensure_column('ocorrencias', 'veiculo_id', 'INTEGER')
-    _ensure_column('ocorrencias', 'data_vinculacao', 'DATETIME')
+    conn = sqlite3.connect(DATABASE_PATH)
+    conn.row_factory = sqlite3.Row
+    _ensure_column(conn, 'ocorrencias', 'motorista_id', 'INTEGER')
+    _ensure_column(conn, 'ocorrencias', 'veiculo_id', 'INTEGER')
+    _ensure_column(conn, 'ocorrencias', 'data_vinculacao', 'DATETIME')
 
     try:
-        db.execute("UPDATE ocorrencias SET status='resolvido' WHERE status='encerrada'")
-        db.commit()
+        conn.execute("UPDATE ocorrencias SET status='resolvido' WHERE status='encerrada'")
+        conn.commit()
     except Exception:
         pass
 
-    # Migra senhas em texto puro para hash
-    for row in db.execute('SELECT id, senha FROM empresas').fetchall():
+    for row in conn.execute('SELECT id, senha FROM empresas').fetchall():
         senha = row['senha'] or ''
         if not (senha.startswith('pbkdf2:') or senha.startswith('scrypt:')):
-            db.execute(
+            conn.execute(
                 'UPDATE empresas SET senha=? WHERE id=?',
                 (generate_password_hash(senha), row['id']),
             )
-    db.commit()
+    conn.commit()
 
-    count = db.execute('SELECT COUNT(*) as c FROM oficinas').fetchone()['c']
-    if count == 0:
+    if conn.execute('SELECT COUNT(*) as c FROM oficinas').fetchone()['c'] == 0:
         oficinas = [
             ('Auto Mecânica Silva', 'Av. Paulista, 1000 - SP', '(11) 99001-1111', -23.5613, -46.6558,
              'mecânica,elétrica', 'leve,médio,pesado', 1, '07:00', '18:00'),
@@ -142,19 +70,19 @@ def init_db():
             ('Auto Peças & Serviços', 'Rua das Oficinas, 88', '(11) 92008-8888', -23.5350, -46.6900,
              'mecânica,borracharia', 'leve,médio', 0, '08:00', '18:00'),
         ]
-        db.executemany(
+        conn.executemany(
             """INSERT INTO oficinas (nome, endereco, telefone, lat, lon, especialidades,
                tipos_veiculo, tem_guincho, hora_abertura, hora_fechamento) VALUES (?,?,?,?,?,?,?,?,?,?)""",
             oficinas,
         )
-        db.execute(
+        conn.execute(
             'INSERT OR IGNORE INTO empresas (nome, email, senha, qtd_caminhoes) VALUES (?,?,?,?)',
             ('Transportadora Demo', 'demo@fixtruck.com', generate_password_hash('123456'), 12),
         )
-        demo = db.execute("SELECT id FROM empresas WHERE email='demo@fixtruck.com'").fetchone()
+        demo = conn.execute("SELECT id FROM empresas WHERE email='demo@fixtruck.com'").fetchone()
         if demo:
             eid = demo['id']
-            db.executemany(
+            conn.executemany(
                 'INSERT INTO motoristas (empresa_id, nome, cnh, telefone) VALUES (?,?,?,?)',
                 [
                     (eid, 'Carlos Mendes', '12345678901', '(11) 99111-1111'),
@@ -162,10 +90,10 @@ def init_db():
                     (eid, 'Ana Paula Souza', '45678912300', '(11) 99333-3333'),
                 ],
             )
-            mids = [r['id'] for r in db.execute(
+            mids = [r['id'] for r in conn.execute(
                 'SELECT id FROM motoristas WHERE empresa_id=? ORDER BY id', (eid,)
             ).fetchall()]
-            db.executemany(
+            conn.executemany(
                 """INSERT INTO veiculos (empresa_id, placa, modelo, marca, tipo_veiculo, motorista_id)
                    VALUES (?,?,?,?,?,?)""",
                 [
@@ -175,10 +103,10 @@ def init_db():
                     (eid, 'JKL0M12', 'Daily 35S14', 'Iveco', 'leve', None),
                 ],
             )
-            vids = [r['id'] for r in db.execute(
+            vids = [r['id'] for r in conn.execute(
                 'SELECT id FROM veiculos WHERE empresa_id=? ORDER BY id', (eid,)
             ).fetchall()]
-            db.executemany(
+            conn.executemany(
                 """INSERT INTO ocorrencias (empresa_id, motorista_id, veiculo_id, tipo_veiculo, tipo_problema,
                    pane_total, lat, lon, endereco, status, oficina_id, data_abertura, data_encerramento, data_vinculacao)
                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
@@ -193,13 +121,13 @@ def init_db():
                      'Centro, São Paulo', 'aberta', None, '2024-05-22 07:15', None, None),
                 ],
             )
-        db.commit()
+        conn.commit()
 
-    demo = db.execute("SELECT id FROM empresas WHERE email='demo@fixtruck.com'").fetchone()
+    demo = conn.execute("SELECT id FROM empresas WHERE email='demo@fixtruck.com'").fetchone()
     if demo:
         eid = demo['id']
-        if db.execute('SELECT COUNT(*) as c FROM motoristas WHERE empresa_id=?', (eid,)).fetchone()['c'] == 0:
-            db.executemany(
+        if conn.execute('SELECT COUNT(*) as c FROM motoristas WHERE empresa_id=?', (eid,)).fetchone()['c'] == 0:
+            conn.executemany(
                 'INSERT INTO motoristas (empresa_id, nome, cnh, telefone) VALUES (?,?,?,?)',
                 [
                     (eid, 'Carlos Mendes', '12345678901', '(11) 99111-1111'),
@@ -207,11 +135,11 @@ def init_db():
                     (eid, 'Ana Paula Souza', '45678912300', '(11) 99333-3333'),
                 ],
             )
-        if db.execute('SELECT COUNT(*) as c FROM veiculos WHERE empresa_id=?', (eid,)).fetchone()['c'] == 0:
-            mids = [r['id'] for r in db.execute(
+        if conn.execute('SELECT COUNT(*) as c FROM veiculos WHERE empresa_id=?', (eid,)).fetchone()['c'] == 0:
+            mids = [r['id'] for r in conn.execute(
                 'SELECT id FROM motoristas WHERE empresa_id=? ORDER BY id', (eid,)
             ).fetchall()]
-            db.executemany(
+            conn.executemany(
                 """INSERT INTO veiculos (empresa_id, placa, modelo, marca, tipo_veiculo, motorista_id)
                    VALUES (?,?,?,?,?,?)""",
                 [
@@ -221,5 +149,5 @@ def init_db():
                     (eid, 'JKL0M12', 'Daily 35S14', 'Iveco', 'leve', None),
                 ],
             )
-        db.commit()
-    db.close()
+        conn.commit()
+    conn.close()

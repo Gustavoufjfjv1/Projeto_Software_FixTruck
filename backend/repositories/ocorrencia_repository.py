@@ -59,10 +59,12 @@ class OcorrenciaRepository:
     @staticmethod
     def buscar_da_empresa(ocorrencia_id, empresa_id):
         row = get_db().execute(
-            'SELECT * FROM ocorrencias WHERE id=? AND empresa_id=?',
+            'SELECT id FROM ocorrencias WHERE id=? AND empresa_id=?',
             (ocorrencia_id, empresa_id),
         ).fetchone()
-        return Ocorrencia.from_row(row)
+        if not row:
+            return None
+        return Ocorrencia.buscar_por_id(row['id'])
 
     @staticmethod
     def contar_abertas(empresa_id):

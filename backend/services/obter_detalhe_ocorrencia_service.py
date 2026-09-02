@@ -1,5 +1,4 @@
-from models import Oficina
-from repositories import OcorrenciaRepository, FavoritoRepository
+from repositories import OcorrenciaRepository, FavoritoRepository, OficinaRepository
 from services.erros import ServiceError
 from utils import minutos_entre
 
@@ -18,5 +17,5 @@ class ObterDetalheOcorrenciaService:
         )
         return {
             'ocorrencia': oc,
-            'oficinas': [o.to_dict() for o in Oficina.listar_ativas()],
+            'oficinas': [o.to_dict() for o in OficinaRepository.listar_ativas()],
         }

@@ -1,16 +1,19 @@
+from database import db
 from models.base import ModeloBase
 
 
 class Oficina(ModeloBase):
-    tabela = 'oficinas'
-    campos = (
-        'nome', 'endereco', 'telefone', 'lat', 'lon', 'especialidades',
-        'tipos_veiculo', 'tem_guincho', 'hora_abertura', 'hora_fechamento', 'ativa',
-    )
+    __tablename__ = 'oficinas'
 
-    @classmethod
-    def listar_ativas(cls):
-        rows = cls._db().execute(
-            'SELECT * FROM oficinas WHERE ativa=1 ORDER BY nome'
-        ).fetchall()
-        return [cls.from_row(r) for r in rows]
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String, nullable=False)
+    endereco = db.Column(db.String)
+    telefone = db.Column(db.String)
+    lat = db.Column(db.Float)
+    lon = db.Column(db.Float)
+    especialidades = db.Column(db.String)
+    tipos_veiculo = db.Column(db.String)
+    tem_guincho = db.Column(db.Integer, default=0)
+    hora_abertura = db.Column(db.String, default='08:00')
+    hora_fechamento = db.Column(db.String, default='18:00')
+    ativa = db.Column(db.Integer, default=1)
