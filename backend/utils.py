@@ -15,23 +15,6 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def oficina_aberta_agora(hora_abertura, hora_fechamento):
-    agora = datetime.now()
-    try:
-        h_ab, m_ab = map(int, (hora_abertura or '08:00').split(':')[:2])
-        h_fe, m_fe = map(int, (hora_fechamento or '18:00').split(':')[:2])
-    except (ValueError, AttributeError):
-        h_ab, m_ab, h_fe, m_fe = 8, 0, 18, 0
-    minutos_agora = agora.hour * 60 + agora.minute
-    minutos_ab = h_ab * 60 + m_ab
-    minutos_fe = h_fe * 60 + m_fe
-    if minutos_ab == minutos_fe:
-        return True
-    if minutos_ab < minutos_fe:
-        return minutos_ab <= minutos_agora < minutos_fe
-    return minutos_agora >= minutos_ab or minutos_agora < minutos_fe
-
-
 def minutos_entre(inicio, fim):
     if not inicio or not fim:
         return None

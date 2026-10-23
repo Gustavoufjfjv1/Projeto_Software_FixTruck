@@ -110,6 +110,32 @@ function showFlash(message, type = 'success') {
   }, 4000);
 }
 
+// Escapa texto vindo do banco/usuário antes de inserir em innerHTML.
+function esc(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Listas oficiais (tipos de problema, veículo, dias, UFs) definidas no backend (constantes.py).
+let _opcoesCache = null;
+async function carregarOpcoes() {
+  if (!_opcoesCache) {
+    _opcoesCache = await Api.get('/api/opcoes');
+  }
+  return _opcoesCache;
+}
+
+function optionsHtml(lista, selecionado, placeholder) {
+  const inicio = placeholder != null ? `<option value="">${esc(placeholder)}</option>` : '';
+  return inicio + lista.map(o =>
+    `<option value="${esc(o.valor)}" ${String(selecionado) === String(o.valor) ? 'selected' : ''}>${esc(o.rotulo)}</option>`
+  ).join('');
+}
+
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name);
 }

@@ -8,5 +8,5 @@ class ServiceError(Exception):
 
 
 def agora_local():
-    from datetime import datetime
-    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    from horarios import agora_sao_paulo
+    return agora_sao_paulo().strftime('%Y-%m-%d %H:%M:%S')
