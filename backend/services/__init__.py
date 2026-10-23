@@ -30,6 +30,15 @@ from services.atualizar_oficina_service import (
     AlterarStatusOficinaService,
     ListarMinhasOficinasService,
 )
+from services.acesso_motorista_service import (
+    DefinirAcessoMotoristaService,
+    AutenticarMotoristaService,
+    TrocarSenhaMotoristaService,
+    ObterPainelMotoristaService,
+    ObterOcorrenciaMotoristaService,
+    buscar_ocorrencia_do_motorista,
+)
+from services.buscar_oficinas_para_ocorrencia_service import buscar_oficinas_compativeis
 
 __all__ = [
     'ServiceError',
@@ -62,4 +71,11 @@ __all__ = [
     'AtualizarOficinaService',
     'AlterarStatusOficinaService',
     'ListarMinhasOficinasService',
+    'DefinirAcessoMotoristaService',
+    'AutenticarMotoristaService',
+    'TrocarSenhaMotoristaService',
+    'ObterPainelMotoristaService',
+    'ObterOcorrenciaMotoristaService',
+    'buscar_ocorrencia_do_motorista',
+    'buscar_oficinas_compativeis',
 ]

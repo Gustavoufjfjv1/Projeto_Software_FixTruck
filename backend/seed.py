@@ -69,12 +69,22 @@ def popular_demo(conn):
             (empresa_id, m['cnh']),
         ).fetchone()
         if row:
-            motorista_ids.append(row[0])
-            continue
-        motorista_ids.append(conn.execute(
-            'INSERT INTO motoristas (empresa_id, nome, cnh, telefone, ativo) VALUES (?,?,?,?,1)',
-            (empresa_id, m['nome'], m['cnh'], m['telefone']),
-        ).lastrowid)
+            motorista_id = row[0]
+        else:
+            motorista_id = conn.execute(
+                'INSERT INTO motoristas (empresa_id, nome, cnh, telefone, ativo) VALUES (?,?,?,?,1)',
+                (empresa_id, m['nome'], m['cnh'], m['telefone']),
+            ).lastrowid
+        motorista_ids.append(motorista_id)
+        email_livre = m.get('email') and not conn.execute(
+            'SELECT 1 FROM motoristas WHERE email=?', (m['email'],)
+        ).fetchone()
+        if email_livre:
+            # Só cria a credencial demo se o motorista ainda não tiver acesso definido.
+            conn.execute(
+                'UPDATE motoristas SET email=?, senha=?, trocar_senha=? WHERE id=? AND email IS NULL',
+                (m['email'], generate_password_hash(m['senha']), m['trocar_senha'], motorista_id),
+            )
 
     veiculo_ids = []
     for v in seed_dados.VEICULOS_DEMO:
@@ -107,14 +117,15 @@ def popular_demo(conn):
         motorista_id = motorista_ids[veiculo['motorista']] if veiculo['motorista'] is not None else None
         conn.execute(
             """INSERT INTO ocorrencias (empresa_id, motorista_id, veiculo_id, tipo_veiculo, tipo_problema,
-                   pane_total, lat, lon, endereco, status, oficina_id, motivo_resolucao,
-                   data_abertura, data_vinculacao, data_encerramento)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   pane_total, descricao, lat, lon, endereco, status, oficina_id, motivo_resolucao,
+                   data_abertura, data_vinculacao, data_encerramento, registrada_por)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 empresa_id, motorista_id, veiculo_ids[oc['veiculo']], veiculo['tipo_veiculo'],
-                oc['tipo_problema'], oc['pane_total'], oc['lat'], oc['lon'], oc['endereco'], oc['status'],
-                oficina_id, 'Problema resolvido na oficina' if oc['status'] == 'resolvido' else None,
-                _formatar(abertura), _formatar(vinculacao), _formatar(fim),
+                oc['tipo_problema'], oc['pane_total'], oc.get('descricao'), oc['lat'], oc['lon'],
+                oc['endereco'], oc['status'], oficina_id,
+                'Problema resolvido na oficina' if oc['status'] == 'resolvido' else None,
+                _formatar(abertura), _formatar(vinculacao), _formatar(fim), oc.get('registrada_por', 'empresa'),
             ),
         )
     return empresa_id

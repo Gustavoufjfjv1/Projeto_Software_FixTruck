@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trocar Senha — FIXTRUCK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-shell" data-papel="motorista">
+    <div class="auth-layout">
+        <div class="auth-card">
+            <div class="auth-card-top">
+                <span class="brand-pill">
+                    <img src="img/logo-truck.svg" alt="" class="brand-pill-icon">
+                    FIX<strong>TRUCK</strong>
+                </span>
+            </div>
+            <div class="auth-card-body">
+                <h1>Defina sua senha</h1>
+                <p class="auth-card-sub" id="sub">Por segurança, troque a senha provisória criada pela transportadora</p>
+                <div id="alert-box"></div>
+                <form id="trocaForm">
+                    <div class="form-group">
+                        <label for="senha_atual">Senha atual (provisória)</label>
+                        <input type="password" id="senha_atual" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nova_senha">Nova senha</label>
+                        <input type="password" id="nova_senha" required minlength="6" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmar">Confirmar nova senha</label>
+                        <input type="password" id="confirmar" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-neon btn-full btn-lg">Salvar nova senha</button>
+                </form>
+                <p class="auth-footer-text"><a href="#" id="sair">Sair</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/icons.js"></script>
+    <script>
+    if (!Api.requireAuth()) throw new Error('auth');
+    const motorista = Api.getMotorista();
+    if (motorista) document.getElementById('sub').textContent = `Olá, ${motorista.nome}. Troque a senha provisória criada pela transportadora.`;
+
+    document.getElementById('sair').addEventListener('click', (e) => {
+        e.preventDefault();
+        Api.clearSession();
+        window.location.href = 'motorista_login.html';
+    });
+
+    document.getElementById('trocaForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertBox = document.getElementById('alert-box');
+        const nova = document.getElementById('nova_senha').value;
+        if (nova !== document.getElementById('confirmar').value) {
+            alertBox.innerHTML = '<div class="alert alert-warning">As senhas não coincidem.</div>';
+            return;
+        }
+        try {
+            const data = await Api.post('/api/motorista/trocar-senha', {
+                senha_atual: document.getElementById('senha_atual').value,
+                nova_senha: nova,
+            });
+            Api.setSessionMotorista(data.token, data.motorista);
+            showFlash(data.mensagem, 'success');
+            setTimeout(() => { window.location.href = 'motorista_painel.html'; }, 800);
+        } catch (err) {
+            alertBox.innerHTML = `<div class="alert alert-warning">${esc(err.message)}</div>`;
+        }
+    });
+    </script>
+</body>
+</html>

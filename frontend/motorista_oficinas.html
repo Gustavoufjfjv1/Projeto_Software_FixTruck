@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oficinas Compatíveis — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body data-papel="motorista">
+<div id="page-root"></div>
+
+<script src="js/api.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/layout.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/busca_oficinas.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('painel');
+
+const id = qs('id');
+if (!id) {
+    window.location.href = 'motorista_painel.html';
+    throw new Error('id');
+}
+
+(async () => {
+    const params = new URLSearchParams();
+    if (qs('raio')) params.set('raio', qs('raio'));
+    if (qs('janela')) params.set('janela', qs('janela'));
+    const q = params.toString();
+    const root = document.getElementById('page-root');
+    try {
+        const data = await Api.get(`/api/motorista/ocorrencias/${id}/buscar-oficinas${q ? '?' + q : ''}`);
+        BuscaOficinas.render(root, data, {
+            podeSelecionar: false,
+            podeFavoritar: false,
+            linkDetalhe: false,
+            voltarHref: 'motorista_painel.html',
+            voltarTexto: 'Minhas ocorrências',
+            onFiltro: ({ raio, janela }) => {
+                const p = new URLSearchParams({ id });
+                if (raio) p.set('raio', raio);
+                if (janela && janela !== '0') p.set('janela', janela);
+                window.location.href = `motorista_oficinas.html?${p.toString()}`;
+            },
+            rodape: `<div class="alert alert-info" style="margin-top:20px">
+                A escolha e o vínculo da oficina são feitos pela transportadora. Ligue para a oficina para combinar o atendimento.</div>`,
+        });
+    } catch (err) {
+        showFlash(err.message, 'error');
+        root.innerHTML = `<div class="page-header"><div><h1>Oficinas compatíveis</h1><p>${esc(err.message)}</p></div>
+            <a href="motorista_painel.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a></div>`;
+    }
+})();
+</script>
+</body>
+</html>

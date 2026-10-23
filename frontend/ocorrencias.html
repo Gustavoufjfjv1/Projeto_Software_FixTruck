@@ -170,7 +170,8 @@ async function load() {
                                 <span class="badge badge-gray">${oc.veiculo_placa || oc.tipo_veiculo || '—'}</span>
                                 ${oc.pane_total ? '<span class="badge badge-red" style="margin-left:4px">pane total</span>' : ''}
                             </td>
-                            <td style="font-size:13px">${oc.motorista_nome || '—'}</td>
+                            <td style="font-size:13px">${esc(oc.motorista_nome || '—')}
+                                ${oc.registrada_por === 'motorista' ? '<br><span class="badge badge-blue" title="Registrada pelo próprio motorista">via motorista</span>' : ''}</td>
                             <td style="text-transform:capitalize">${oc.tipo_problema || '—'}</td>
                             <td style="font-size:13px;color:var(--gray-600);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${local}</td>
                             <td>${statusBadge(oc.status)}</td>

@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS motoristas (
     cnh TEXT,
     telefone TEXT,
     ativo INTEGER NOT NULL DEFAULT 1,
+    email TEXT UNIQUE,
+    senha TEXT,
+    trocar_senha INTEGER NOT NULL DEFAULT 0 CHECK (trocar_senha IN (0, 1)),
     FOREIGN KEY (empresa_id) REFERENCES empresas(id)
 );
 
@@ -61,6 +64,7 @@ CREATE TABLE IF NOT EXISTS ocorrencias (
     tipo_veiculo TEXT NOT NULL,
     tipo_problema TEXT NOT NULL,
     pane_total INTEGER NOT NULL DEFAULT 0,
+    descricao TEXT,
     lat TEXT,
     lon TEXT,
     endereco TEXT,
@@ -71,6 +75,7 @@ CREATE TABLE IF NOT EXISTS ocorrencias (
     data_abertura DATETIME,
     data_encerramento DATETIME,
     data_vinculacao DATETIME,
+    registrada_por TEXT NOT NULL DEFAULT 'empresa' CHECK (registrada_por IN ('empresa', 'motorista')),
     FOREIGN KEY (empresa_id) REFERENCES empresas(id),
     FOREIGN KEY (motorista_id) REFERENCES motoristas(id),
     FOREIGN KEY (veiculo_id) REFERENCES veiculos(id),

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Ocorrência — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-papel="motorista">
+<div class="form-page-center">
+    <div class="page-header">
+        <div>
+            <h1>Registrar ocorrência</h1>
+            <p>Informe o problema e onde você está. A transportadora é avisada pelo sistema.</p>
+        </div>
+        <a href="motorista_painel.html" class="btn btn-outline"><span data-icon="arrowLeft" data-size="16"></span> Voltar</a>
+    </div>
+
+    <div class="card">
+        <div id="form-erros"></div>
+        <form id="ocForm" novalidate>
+            <div class="form-group">
+                <label for="veiculo_id">Seu veículo *</label>
+                <select id="veiculo_id" required></select>
+            </div>
+            <div class="form-group">
+                <label for="tipo_problema">Tipo de problema *</label>
+                <select id="tipo_problema" required></select>
+            </div>
+            <div class="form-group">
+                <label for="descricao">Descrição *</label>
+                <textarea id="descricao" required minlength="5" maxlength="500" placeholder="Descreva o que aconteceu (ex.: pneu estourado no eixo traseiro)"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="pane_total">
+                    Pane total — o veículo não anda (só oficinas com guincho serão recomendadas)
+                </label>
+            </div>
+
+            <div class="alert alert-info">Use o GPS ou, se ele falhar, digite a rodovia/avenida e a cidade.</div>
+            <div id="local-container"></div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn">Registrar e ver oficinas compatíveis</button>
+        </form>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/localizacao.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('nova');
+
+document.getElementById('local-container').innerHTML = Localizacao.html();
+Localizacao.ligar();
+
+function mostrarErro(msg) {
+    document.getElementById('form-erros').innerHTML = msg ? `<div class="alert alert-warning">${esc(msg)}</div>` : '';
+    if (msg) showFlash(msg, 'error');
+}
+
+document.getElementById('ocForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    mostrarErro('');
+    if (!document.getElementById('veiculo_id').value) return mostrarErro('Selecione o seu veículo.');
+    if (!document.getElementById('tipo_problema').value) return mostrarErro('Selecione o tipo de problema.');
+    if (document.getElementById('descricao').value.trim().length < 5) return mostrarErro('Descreva o problema (mínimo 5 caracteres).');
+    const local = await Localizacao.coletar();
+    if (local.erro) return mostrarErro(local.erro);
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    try {
+        const res = await Api.post('/api/motorista/ocorrencias', {
+            veiculo_id: Number(document.getElementById('veiculo_id').value),
+            tipo_problema: document.getElementById('tipo_problema').value,
+            descricao: document.getElementById('descricao').value,
+            pane_total: document.getElementById('pane_total').checked,
+            ...local.dados,
+        });
+        showFlash(res.mensagem, 'success');
+        window.location.href = `motorista_oficinas.html?id=${res.id}`;
+    } catch (err) {
+        mostrarErro(err.message);
+        btn.disabled = false;
+    }
+});
+
+(async () => {
+    try {
+        const data = await Api.get('/api/motorista/form-data');
+        const veiculos = data.veiculos || [];
+        document.getElementById('tipo_problema').innerHTML = optionsHtml(data.tipos_problema, '', 'Selecione...');
+        document.getElementById('veiculo_id').innerHTML = veiculos.length
+            ? veiculos.map(v => `<option value="${v.id}">${esc(v.placa)} — ${esc(v.modelo || v.tipo_veiculo)}</option>`).join('')
+            : '<option value="">Nenhum veículo vinculado a você</option>';
+        if (!veiculos.length) {
+            mostrarErro('Nenhum veículo está vinculado a você. Peça à transportadora para fazer o vínculo.');
+            document.getElementById('submitBtn').disabled = true;
+        }
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+})();
+</script>
+</body>
+</html>

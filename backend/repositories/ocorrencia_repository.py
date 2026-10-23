@@ -13,8 +13,36 @@ def _sql_periodo(periodo, coluna='o.data_abertura'):
     return ''
 
 
+# Ocorrências visíveis ao motorista: da própria empresa e (registradas por ele OU do veículo vinculado a ele).
+_FILTRO_MOTORISTA = """o.empresa_id = ? AND (o.motorista_id = ? OR o.veiculo_id IN (
+    SELECT id FROM veiculos WHERE motorista_id = ? AND empresa_id = ?))"""
+
+
 class OcorrenciaRepository:
     """Consultas complexas de ocorrências (SQL puro)."""
+
+    @staticmethod
+    def listar_do_motorista(motorista_id, empresa_id, apenas_abertas=False):
+        query = f"""SELECT o.*, of.nome as oficina_nome, v.placa as veiculo_placa
+                    FROM ocorrencias o
+                    LEFT JOIN oficinas of ON o.oficina_id = of.id
+                    LEFT JOIN veiculos v ON o.veiculo_id = v.id
+                    WHERE {_FILTRO_MOTORISTA}"""
+        if apenas_abertas:
+            query += " AND o.status IN ('aberta','em_atendimento')"
+        query += ' ORDER BY o.data_abertura DESC'
+        params = (empresa_id, motorista_id, motorista_id, empresa_id)
+        return rows_to_list(get_db().execute(query, params).fetchall())
+
+    @staticmethod
+    def buscar_do_motorista(ocorrencia_id, motorista_id, empresa_id):
+        row = get_db().execute(
+            f'SELECT o.id FROM ocorrencias o WHERE o.id = ? AND {_FILTRO_MOTORISTA}',
+            (ocorrencia_id, empresa_id, motorista_id, motorista_id, empresa_id),
+        ).fetchone()
+        if not row:
+            return None
+        return Ocorrencia.buscar_por_id(row['id'])
 
     @staticmethod
     def listar_por_empresa(empresa_id, filtros=None):
@@ -45,8 +73,8 @@ class OcorrenciaRepository:
     @staticmethod
     def buscar_detalhe(ocorrencia_id, empresa_id):
         row = get_db().execute(
-            """SELECT o.*, of.nome as oficina_nome, v.placa as veiculo_placa, v.modelo as veiculo_modelo,
-                      m.nome as motorista_nome
+            """SELECT o.*, of.nome as oficina_nome, of.telefone as oficina_telefone,
+                      v.placa as veiculo_placa, v.modelo as veiculo_modelo, m.nome as motorista_nome
                FROM ocorrencias o
                LEFT JOIN oficinas of ON o.oficina_id = of.id
                LEFT JOIN veiculos v ON o.veiculo_id = v.id

@@ -58,6 +58,7 @@ class AtualizarOcorrenciaService:
         oc.tipo_veiculo = tipo_veiculo
         oc.tipo_problema = tipo_problema
         oc.pane_total = pane_total
+        oc.descricao = (dados.get('descricao') or '').strip() or None
         oc.lat = lat or None
         oc.lon = lon or None
         oc.endereco = endereco_final

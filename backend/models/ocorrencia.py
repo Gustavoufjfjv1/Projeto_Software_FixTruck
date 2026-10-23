@@ -12,6 +12,7 @@ class Ocorrencia(ModeloBase):
     tipo_veiculo = db.Column(db.String, nullable=False)
     tipo_problema = db.Column(db.String, nullable=False)
     pane_total = db.Column(db.Integer, nullable=False, default=0, server_default='0')
+    descricao = db.Column(db.String)
     lat = db.Column(db.String)
     lon = db.Column(db.String)
     endereco = db.Column(db.String)
@@ -22,3 +23,4 @@ class Ocorrencia(ModeloBase):
     data_abertura = db.Column(db.String)
     data_encerramento = db.Column(db.String)
     data_vinculacao = db.Column(db.String)
+    registrada_por = db.Column(db.String, nullable=False, default='empresa', server_default='empresa')

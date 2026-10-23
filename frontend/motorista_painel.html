@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Ocorrências — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-papel="motorista">
+<div class="page-header">
+    <div>
+        <h1>Minhas ocorrências</h1>
+        <p id="sub">Acompanhe as panes registradas para o seu veículo</p>
+    </div>
+    <a href="motorista_nova_ocorrencia.html" class="btn btn-primary">+ Registrar ocorrência</a>
+</div>
+
+<div class="card" style="margin-bottom:20px">
+    <div class="card-header"><span class="card-title">Veículo(s) vinculado(s) a você</span></div>
+    <div id="veiculos"></div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Ocorrências</span>
+        <select id="filtro" class="filter-select">
+            <option value="abertas">Em aberto</option>
+            <option value="">Todas</option>
+        </select>
+    </div>
+    <div id="lista"></div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/layout.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('painel');
+
+const filtro = document.getElementById('filtro');
+filtro.value = qs('status') ?? 'abertas';
+filtro.addEventListener('change', () => {
+    window.location.href = 'motorista_painel.html?status=' + filtro.value;
+});
+
+(async () => {
+    try {
+        const data = await Api.get('/api/motorista/ocorrencias' + (filtro.value ? '?status=abertas' : ''));
+        document.getElementById('sub').textContent =
+            `${data.motorista.nome} — ${data.empresa_nome}. Você vê apenas ocorrências do seu veículo ou registradas por você.`;
+        const veiculos = data.veiculos || [];
+        document.getElementById('veiculos').innerHTML = veiculos.length
+            ? veiculos.map(v => `<span class="badge badge-gray" style="margin-right:8px;font-size:14px">${esc(v.placa)} — ${esc(v.modelo || '')} (${esc(v.tipo_veiculo)})</span>`).join('')
+            : '<p style="color:var(--red);font-size:14px">Nenhum veículo vinculado a você. Peça à transportadora para vincular um veículo antes de registrar ocorrências.</p>';
+
+        const ocs = data.ocorrencias || [];
+        document.getElementById('lista').innerHTML = ocs.length ? `
+            <div class="table-wrap"><table>
+                <thead><tr><th>#</th><th>Veículo</th><th>Problema</th><th>Local</th><th>Status</th><th>Oficina</th><th>Abertura</th><th></th></tr></thead>
+                <tbody>${ocs.map(oc => `<tr>
+                    <td style="font-weight:700;color:var(--gray-400)">#${oc.id}</td>
+                    <td>${esc(oc.veiculo_placa || '—')}${oc.pane_total ? ' <span class="badge badge-red">pane total</span>' : ''}</td>
+                    <td style="text-transform:capitalize">${esc(oc.tipo_problema)}${oc.descricao ? `<br><span style="font-size:12px;color:var(--gray-500);text-transform:none">${esc(oc.descricao)}</span>` : ''}</td>
+                    <td style="font-size:13px;max-width:180px">${esc(oc.endereco || '—')}</td>
+                    <td>${statusBadge(oc.status)}</td>
+                    <td style="font-size:13px">${esc(oc.oficina_nome || '—')}</td>
+                    <td style="font-size:13px;color:var(--gray-600)">${formatDate(oc.data_abertura)}</td>
+                    <td>${oc.status !== 'resolvido' ? `<a href="motorista_oficinas.html?id=${oc.id}" class="btn btn-outline btn-sm">Oficinas compatíveis</a>` : ''}</td>
+                </tr>`).join('')}</tbody></table></div>`
+            : `<div class="empty-state"><div class="empty-icon">${Icons.clipboard(48)}</div>
+                 <h3>Nenhuma ocorrência ${filtro.value ? 'em aberto' : ''}</h3>
+                 <p>Use “Registrar ocorrência” quando o veículo apresentar um problema.</p></div>`;
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+})();
+</script>
+</body>
+</html>

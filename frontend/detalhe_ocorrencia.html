@@ -52,8 +52,11 @@ async function load() {
             <div class="card" style="max-width:700px">
                 <div class="card-header"><span class="card-title">Dados da ocorrência</span></div>
                 <div class="info-row"><span class="info-label">Veículo</span><span class="info-value">${oc.veiculo_placa || oc.tipo_veiculo || '—'}${oc.veiculo_modelo ? ' — ' + oc.veiculo_modelo : ''}</span></div>
-                <div class="info-row"><span class="info-label">Motorista</span><span class="info-value">${oc.motorista_nome || '—'}</span></div>
-                <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">${oc.tipo_problema || '—'}</span></div>
+                <div class="info-row"><span class="info-label">Motorista</span><span class="info-value">${esc(oc.motorista_nome || '—')}</span></div>
+                <div class="info-row"><span class="info-label">Registrada por</span><span class="info-value">${oc.registrada_por === 'motorista' ? '<span class="badge badge-blue">Motorista (acesso próprio)</span>' : 'Empresa (gestor)'}</span></div>
+                <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">${esc(oc.tipo_problema || '—')}</span></div>
+                ${oc.descricao ? `<div class="info-row"><span class="info-label">Descrição</span><span class="info-value" style="text-align:left;max-width:60%">${esc(oc.descricao)}</span></div>` : ''}
+                <div class="info-row"><span class="info-label">Local</span><span class="info-value" style="font-size:13px">${esc(oc.endereco || '—')}</span></div>
                 <div class="info-row"><span class="info-label">Pane total</span><span class="info-value">${oc.pane_total ? 'Sim' : 'Não'}</span></div>
                 <div class="info-row"><span class="info-label">Localização GPS</span><span class="info-value" style="font-size:13px">${oc.lat && oc.lon ? oc.lat + ', ' + oc.lon : '—'}</span></div>
                 <div class="info-row">

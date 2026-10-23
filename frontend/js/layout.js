@@ -1,5 +1,30 @@
+function navEmpresa(active) {
+  const item = (pagina, chave, icone, rotulo) =>
+    `<li><a href="${pagina}" class="nav-link ${active === chave ? 'active' : ''}"><span class="nav-icon">${icone}</span> <span class="nav-label">${rotulo}</span></a></li>`;
+  return [
+    item('dashboard.html', 'dashboard', Icons.dashboard(), 'Dashboard'),
+    item('ocorrencias.html', 'ocorrencias', Icons.alert(), 'Ocorrências'),
+    item('frota.html', 'frota', Icons.truck(), 'Frota'),
+    item('oficinas.html', 'oficinas', Icons.star(20, true), 'Favoritas'),
+    item('gerenciar_oficinas.html', 'gerenciar_oficinas', Icons.wrench(20), 'Cadastro de oficinas'),
+    item('relatorios.html', 'relatorios', Icons.chart(), 'Relatórios'),
+  ].join('');
+}
+
+function navMotorista(active) {
+  const item = (pagina, chave, icone, rotulo) =>
+    `<li><a href="${pagina}" class="nav-link ${active === chave ? 'active' : ''}"><span class="nav-icon">${icone}</span> <span class="nav-label">${rotulo}</span></a></li>`;
+  return [
+    item('motorista_painel.html', 'painel', Icons.clipboard(20), 'Minhas ocorrências'),
+    item('motorista_nova_ocorrencia.html', 'nova', Icons.alert(), 'Registrar ocorrência'),
+  ].join('');
+}
+
 function renderLayout(active) {
-  const empresa = Api.getEmpresa() || { nome: 'Empresa' };
+  const motorista = Api.papel() === 'motorista';
+  const empresa = motorista
+    ? { nome: (Api.getMotorista() || {}).nome || 'Motorista' }
+    : (Api.getEmpresa() || { nome: 'Empresa' });
   const nome = (empresa.nome || 'Empresa').slice(0, 16);
 
   document.body.classList.add('app-shell');
@@ -33,15 +58,12 @@ function renderLayout(active) {
       </button>
     </div>
     <ul class="sidebar-nav">
-      <li><a href="dashboard.html" class="nav-link ${active === 'dashboard' ? 'active' : ''}"><span class="nav-icon">${Icons.dashboard()}</span> <span class="nav-label">Dashboard</span></a></li>
-      <li><a href="ocorrencias.html" class="nav-link ${active === 'ocorrencias' ? 'active' : ''}"><span class="nav-icon">${Icons.alert()}</span> <span class="nav-label">Ocorrências</span></a></li>
-      <li><a href="frota.html" class="nav-link ${active === 'frota' ? 'active' : ''}"><span class="nav-icon">${Icons.truck()}</span> <span class="nav-label">Frota</span></a></li>
-      <li><a href="oficinas.html" class="nav-link ${active === 'oficinas' ? 'active' : ''}"><span class="nav-icon">${Icons.star(20, true)}</span> <span class="nav-label">Favoritas</span></a></li>
-      <li><a href="gerenciar_oficinas.html" class="nav-link ${active === 'gerenciar_oficinas' ? 'active' : ''}"><span class="nav-icon">${Icons.wrench(20)}</span> <span class="nav-label">Cadastro de oficinas</span></a></li>
-      <li><a href="relatorios.html" class="nav-link ${active === 'relatorios' ? 'active' : ''}"><span class="nav-icon">${Icons.chart()}</span> <span class="nav-label">Relatórios</span></a></li>
+      ${motorista ? navMotorista(active) : navEmpresa(active)}
     </ul>
     <div class="sidebar-footer">
-      <a href="perfil.html" class="nav-link ${active === 'perfil' ? 'active' : ''}"><span class="nav-icon">${Icons.user()}</span> <span class="nav-label">${nome}</span></a>
+      ${motorista
+        ? `<span class="nav-link"><span class="nav-icon">${Icons.user()}</span> <span class="nav-label">${esc(nome)} (motorista)</span></span>`
+        : `<a href="perfil.html" class="nav-link ${active === 'perfil' ? 'active' : ''}"><span class="nav-icon">${Icons.user()}</span> <span class="nav-label">${esc(nome)}</span></a>`}
       <a href="#" id="logout-link" class="nav-link logout-link"><span class="nav-icon">${Icons.logout()}</span> <span class="nav-label">Sair</span></a>
     </div>
   `;
@@ -71,7 +93,7 @@ function renderLayout(active) {
   document.getElementById('logout-link').addEventListener('click', (e) => {
     e.preventDefault();
     Api.clearSession();
-    window.location.href = 'index.html';
+    window.location.href = motorista ? 'motorista_login.html' : 'index.html';
   });
 }
 

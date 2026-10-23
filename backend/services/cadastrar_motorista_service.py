@@ -1,4 +1,5 @@
 from models import Motorista
+from services.acesso_motorista_service import DefinirAcessoMotoristaService
 from services.erros import ServiceError
 
 
@@ -14,4 +15,13 @@ class CadastrarMotoristaService:
             telefone=dados.get('telefone', ''),
         )
         motorista.salvar()
-        return {'mensagem': 'Motorista cadastrado.'}
+        resposta = {'mensagem': 'Motorista cadastrado.', 'id': motorista.id}
+        if dados.get('email'):
+            try:
+                acesso = DefinirAcessoMotoristaService().executar(empresa_id, motorista.id, dados)
+            except ServiceError:
+                motorista.deletar()
+                raise
+            resposta.update({k: acesso[k] for k in ('email', 'senha_temporaria') if k in acesso})
+            resposta['mensagem'] = 'Motorista cadastrado com acesso ao sistema.'
+        return resposta

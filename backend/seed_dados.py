@@ -168,9 +168,12 @@ EMPRESA_DEMO = {
     'nome': 'Transportadora Demo', 'email': 'demo@fixtruck.com', 'senha': '123456', 'qtd_caminhoes': 12,
 }
 
+# Acesso de demonstração: Carlos entra direto; José precisa trocar a senha no primeiro login.
 MOTORISTAS_DEMO = [
-    {'nome': 'Carlos Mendes', 'cnh': '12345678901', 'telefone': '(11) 99111-1111'},
-    {'nome': 'José Ferreira', 'cnh': '98765432100', 'telefone': '(11) 99222-2222'},
+    {'nome': 'Carlos Mendes', 'cnh': '12345678901', 'telefone': '(11) 99111-1111',
+     'email': 'carlos@fixtruck.com', 'senha': 'motorista123', 'trocar_senha': 0},
+    {'nome': 'José Ferreira', 'cnh': '98765432100', 'telefone': '(11) 99222-2222',
+     'email': 'jose@fixtruck.com', 'senha': 'trocar123', 'trocar_senha': 1},
     {'nome': 'Ana Paula Souza', 'cnh': '45678912300', 'telefone': '(11) 99333-3333'},
 ]
 
@@ -194,7 +197,8 @@ OCORRENCIAS_DEMO = [
      'endereco': 'BR-040 — KM 773 — Juiz de Fora/MG', 'status': 'em_atendimento',
      'oficina': 'Diesel Forte Juiz de Fora', 'dias_atras': 20, 'horas_ate_oficina': 1, 'horas_ate_fim': None},
     {'veiculo': 0, 'tipo_problema': 'hidráulica', 'pane_total': 1, 'lat': '-22.8580', 'lon': '-43.2700',
-     'endereco': 'Av. Brasil — Rio de Janeiro/RJ', 'status': 'aberta',
+     'endereco': 'Av. Brasil — Rio de Janeiro/RJ', 'status': 'aberta', 'registrada_por': 'motorista',
+     'descricao': 'Vazamento de óleo no sistema de freio; caminhão parado no acostamento.',
      'oficina': None, 'dias_atras': 5, 'horas_ate_oficina': None, 'horas_ate_fim': None},
     {'veiculo': 3, 'tipo_problema': 'mecânica', 'pane_total': 0, 'lat': '-23.5500', 'lon': '-46.6800',
      'endereco': 'Centro — São Paulo/SP', 'status': 'aberta',
