@@ -1,4 +1,5 @@
-from repositories import VeiculoRepository, MotoristaRepository
+from repositories import VeiculoRepository
+from services import posse
 from services.erros import ServiceError
 
 
@@ -7,13 +8,7 @@ class VincularMotoristaVeiculoService:
         veiculo = VeiculoRepository.buscar_da_empresa(veiculo_id, empresa_id)
         if not veiculo:
             raise ServiceError('Veículo não encontrado.', 404)
-
-        motorista_id = dados.get('motorista_id') or None
-        if motorista_id:
-            mot = MotoristaRepository.buscar_da_empresa(motorista_id, empresa_id)
-            if not mot:
-                raise ServiceError('Motorista inválido.', 400)
-
-        veiculo.motorista_id = motorista_id
+        motorista = posse.motorista_da_empresa(dados.get('motorista_id'), empresa_id)
+        veiculo.motorista_id = motorista.id if motorista else None
         veiculo.atualizar()
         return {'mensagem': 'Motorista vinculado ao veículo da frota.'}

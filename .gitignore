@@ -4,3 +4,4 @@ venv/
 .venv/
 backend/*.db-journal
 backend/tests/.tmp/
+backend/*.db.bak-*

@@ -75,7 +75,7 @@ async function load() {
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
                 <div>
-                    <h1>${of.nome}</h1>
+                    <h1>${esc(of.nome)}</h1>
                     <p>Detalhes da oficina</p>
                 </div>
                 <div style="display:flex;gap:10px">
@@ -99,11 +99,11 @@ async function load() {
 
                     <div class="info-row">
                         <span class="info-label">Endereço</span>
-                        <span class="info-value">${of.endereco || '—'}</span>
+                        <span class="info-value">${esc(of.endereco || '—')}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Telefone</span>
-                        <span class="info-value">${of.telefone || '—'}</span>
+                        <span class="info-value">${esc(of.telefone || '—')}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Horário de funcionamento</span>
@@ -138,7 +138,7 @@ async function load() {
                         <a href="nova_ocorrencia.html" class="btn btn-primary btn-full" style="margin-bottom:10px">
                             ${Icons.alert(16)} Abrir Ocorrência
                         </a>
-                        ${of.telefone ? `<a href="tel:${of.telefone}" class="btn btn-outline btn-full">${Icons.phone(16)} Ligar para Oficina</a>` : ''}
+                        ${of.telefone ? `<a href="tel:${esc(of.telefone)}" class="btn btn-outline btn-full">${Icons.phone(16)} Ligar para Oficina</a>` : ''}
                     </div>
 
                     <div class="card">

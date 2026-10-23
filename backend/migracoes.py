@@ -20,7 +20,16 @@ SCRIPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database
 _RE_TABELA = re.compile(r'CREATE TABLE IF NOT EXISTS (\w+) \((.*?)\n\);', re.DOTALL)
 
 # Expressões SQL usadas ao copiar uma coluna da tabela antiga (placeholder {col}).
-TRANSFORMACOES = {}
+_PLACA = "upper(replace(replace(trim({col}), '-', ''), ' ', ''))"
+_TIPO_PROBLEMA = "CASE WHEN lower(trim({col})) = 'pneu' THEN 'borracharia' ELSE lower(trim({col})) END"
+TRANSFORMACOES = {
+    'veiculos': {'placa': _PLACA},
+    'ocorrencias': {'tipo_problema': _TIPO_PROBLEMA},
+}
+
+
+class MigracaoError(RuntimeError):
+    """Dados existentes impedem a migração; nada foi alterado."""
 
 
 def ler_script():
@@ -108,8 +117,80 @@ def _aplicar_horarios_legados(conn, legados):
         )
 
 
+def _verificar_dados(conn):
+    """Confere, antes de reconstruir, se os dados atuais cabem nas novas restrições (UNIQUE/CHECK)."""
+    from constantes import TIPOS_PROBLEMA, TIPOS_VEICULO
+    problemas = []
+    if _existe(conn, 'veiculos'):
+        expr = _PLACA.format(col='placa')
+        for placa, ids in conn.execute(
+            f'SELECT {expr}, group_concat(id) FROM veiculos GROUP BY {expr} HAVING COUNT(*) > 1'
+        ).fetchall():
+            problemas.append(f'placa {placa} repetida nos veículos de id {ids}')
+        for vid, tipo in conn.execute('SELECT id, tipo_veiculo FROM veiculos').fetchall():
+            if tipo not in TIPOS_VEICULO:
+                problemas.append(f'veículo {vid} com tipo_veiculo inválido "{tipo}"')
+    if _existe(conn, 'ocorrencias'):
+        cols = _colunas(conn, 'ocorrencias')
+        expr = _TIPO_PROBLEMA.format(col='tipo_problema')
+        for oid, tipo, tipo_veic in conn.execute(
+            f'SELECT id, {expr}, tipo_veiculo FROM ocorrencias'
+        ).fetchall():
+            if tipo not in TIPOS_PROBLEMA:
+                problemas.append(f'ocorrência {oid} com tipo_problema inválido "{tipo}"')
+            if tipo_veic not in TIPOS_VEICULO:
+                problemas.append(f'ocorrência {oid} com tipo_veiculo inválido "{tipo_veic}"')
+        if 'status' in cols:
+            for oid, status in conn.execute(
+                "SELECT id, status FROM ocorrencias WHERE status NOT IN "
+                "('aberta','em_atendimento','resolvido','encerrada')"
+            ).fetchall():
+                problemas.append(f'ocorrência {oid} com status inválido "{status}"')
+    if problemas:
+        raise MigracaoError(
+            'Migração cancelada (nenhum dado foi alterado). Corrija manualmente: ' + '; '.join(problemas)
+        )
+
+
+def _antes_de_reconstruir(conn):
+    if _existe(conn, 'ocorrencias'):
+        conn.execute("UPDATE ocorrencias SET status='resolvido' WHERE status='encerrada'")
+
+
+# (tabela, coluna anulável, tabela referenciada): referência para linha inexistente vira NULL.
+_REFERENCIAS_ANULAVEIS = [
+    ('veiculos', 'motorista_id', 'motoristas'),
+    ('oficinas', 'empresa_id', 'empresas'),
+    ('ocorrencias', 'motorista_id', 'motoristas'),
+    ('ocorrencias', 'veiculo_id', 'veiculos'),
+    ('ocorrencias', 'oficina_id', 'oficinas'),
+]
+
+
+def _corrigir_referencias_orfas(conn):
+    for tabela, coluna, alvo in _REFERENCIAS_ANULAVEIS:
+        conn.execute(
+            f'UPDATE {tabela} SET {coluna} = NULL WHERE {coluna} IS NOT NULL '
+            f'AND {coluna} NOT IN (SELECT id FROM {alvo})'
+        )
+
+
+def _normalizar_especialidades(conn):
+    for oficina_id, especialidades in conn.execute('SELECT id, especialidades FROM oficinas').fetchall():
+        itens = []
+        for item in (especialidades or '').split(','):
+            item = item.strip().lower()
+            item = 'borracharia' if item == 'pneu' else item
+            if item and item not in itens:
+                itens.append(item)
+        novo = ','.join(itens)
+        if novo != (especialidades or ''):
+            conn.execute('UPDATE oficinas SET especialidades=? WHERE id=?', (novo, oficina_id))
+
+
 def _ajustes_de_dados(conn):
-    conn.execute("UPDATE ocorrencias SET status='resolvido' WHERE status='encerrada'")
+    _corrigir_referencias_orfas(conn)
+    _normalizar_especialidades(conn)
     for empresa_id, senha in conn.execute('SELECT id, senha FROM empresas').fetchall():
         senha = senha or ''
         if not (senha.startswith('pbkdf2:') or senha.startswith('scrypt:')):
@@ -138,6 +219,8 @@ def aplicar(conn, caminho_banco=None):
         t for t in esperadas
         if t in existentes and normalizar_sql(existentes[t]) != normalizar_sql(esperadas[t])
     ]
+    if divergentes:
+        _verificar_dados(conn)
     backup = _backup(caminho_banco) if divergentes else None
     legados = _horarios_legados(conn)
 
@@ -145,6 +228,7 @@ def aplicar(conn, caminho_banco=None):
     conn.execute('PRAGMA foreign_keys = OFF')
     try:
         conn.execute('BEGIN')
+        _antes_de_reconstruir(conn)
         for tabela in divergentes:
             _reconstruir(conn, tabela, esperadas[tabela])
         for tabela, create_sql in esperadas.items():
@@ -157,4 +241,7 @@ def aplicar(conn, caminho_banco=None):
         raise
     finally:
         conn.execute('PRAGMA foreign_keys = ON')
+    violacoes = conn.execute('PRAGMA foreign_key_check').fetchall()
+    if violacoes:
+        print(f'[migração] Aviso: {len(violacoes)} referência(s) quebrada(s) mantidas sem alteração: {violacoes[:10]}')
     return divergentes, backup

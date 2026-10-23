@@ -51,7 +51,7 @@ async function load() {
 
             <div class="card" style="max-width:700px">
                 <div class="card-header"><span class="card-title">Dados da ocorrência</span></div>
-                <div class="info-row"><span class="info-label">Veículo</span><span class="info-value">${oc.veiculo_placa || oc.tipo_veiculo || '—'}${oc.veiculo_modelo ? ' — ' + oc.veiculo_modelo : ''}</span></div>
+                <div class="info-row"><span class="info-label">Veículo</span><span class="info-value">${esc(oc.veiculo_placa || oc.tipo_veiculo || '—')}${esc(oc.veiculo_modelo ? ' — ' + oc.veiculo_modelo : '')}</span></div>
                 <div class="info-row"><span class="info-label">Motorista</span><span class="info-value">${esc(oc.motorista_nome || '—')}</span></div>
                 <div class="info-row"><span class="info-label">Registrada por</span><span class="info-value">${oc.registrada_por === 'motorista' ? '<span class="badge badge-blue">Motorista (acesso próprio)</span>' : 'Empresa (gestor)'}</span></div>
                 <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">${esc(oc.tipo_problema || '—')}</span></div>
@@ -62,7 +62,7 @@ async function load() {
                 <div class="info-row">
                     <span class="info-label">Oficina</span>
                     <span class="info-value" style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
-                        ${oc.oficina_nome || '—'}
+                        ${esc(oc.oficina_nome || '—')}
                         ${oc.oficina_id ? `
                         <button type="button" class="fav-btn ${oc.oficina_favoritada ? 'active' : ''}" id="favOficinaBtn"
                                 title="${oc.oficina_favoritada ? 'Remover dos favoritos' : 'Favoritar esta oficina'}">
@@ -79,10 +79,10 @@ async function load() {
                 <div class="info-row"><span class="info-label">Tempo total do atendimento</span><span class="info-value">${oc.tempo_total_min} min</span></div>
                 ` : ''}
                 ${oc.motivo_resolucao ? `
-                <div class="info-row"><span class="info-label">Motivo da resolução</span><span class="info-value">${oc.motivo_resolucao}</span></div>
+                <div class="info-row"><span class="info-label">Motivo da resolução</span><span class="info-value">${esc(oc.motivo_resolucao)}</span></div>
                 ` : ''}
                 ${oc.observacoes ? `
-                <div class="info-row"><span class="info-label">Observações</span><span class="info-value" style="text-align:left;max-width:60%">${oc.observacoes}</span></div>
+                <div class="info-row"><span class="info-label">Observações</span><span class="info-value" style="text-align:left;max-width:60%">${esc(oc.observacoes)}</span></div>
                 ` : ''}
             </div>
         `;

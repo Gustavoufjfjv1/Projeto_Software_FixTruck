@@ -65,7 +65,7 @@
                     </span>
                     <div>
                         <strong>Código temporário</strong>
-                        <p>O código de recuperação expira em 30 minutos por segurança.</p>
+                        <p>O código expira em 30 minutos, vale uma única vez e é invalidado quando um novo é pedido.</p>
                     </div>
                 </li>
             </ul>
@@ -98,7 +98,7 @@
             showFlash(data.mensagem || 'Senha redefinida.', 'success');
             setTimeout(() => { window.location.href = 'login.html'; }, 1200);
         } catch (err) {
-            alertBox.innerHTML = `<div class="alert alert-warning">${err.message}</div>`;
+            alertBox.innerHTML = `<div class="alert alert-warning">${esc(err.message)}</div>`;
             submitBtn.disabled = false;
         }
     });

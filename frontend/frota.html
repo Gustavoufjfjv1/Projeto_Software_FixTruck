@@ -50,7 +50,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Placa *</label>
-                    <input type="text" name="placa" id="vei_placa" required placeholder="ABC1D23" maxlength="7" autocomplete="off" style="text-transform:uppercase">
+                    <input type="text" name="placa" id="vei_placa" required placeholder="ABC1D23 ou ABC1234" title="Mercosul (ABC1D23) ou antiga (ABC-1234)" maxlength="8" autocomplete="off" style="text-transform:uppercase">
                 </div>
                 <div class="form-group">
                     <label>Tipo *</label>
@@ -136,10 +136,10 @@ async function load() {
                         <tbody>
                         ${veiculos.map(v => `
                             <tr>
-                                <td style="font-weight:700">${v.placa}</td>
+                                <td style="font-weight:700">${esc(v.placa)}</td>
                                 <td>${(v.marca || '') + ' ' + (v.modelo || '—')}</td>
                                 <td><span class="badge badge-gray" style="text-transform:capitalize">${v.tipo_veiculo || '—'}</span></td>
-                                <td>${v.motorista_nome || '—'}</td>
+                                <td>${esc(v.motorista_nome || '—')}</td>
                                 <td>
                                     <form class="vincular-form" data-veiculo="${v.id}" style="display:flex;gap:8px;align-items:center">
                                         <select name="motorista_id" class="filter-select">

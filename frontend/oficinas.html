@@ -152,8 +152,8 @@ async function load() {
                     </div>` : ''}
                     <div class="oficina-card-header">
                         <div>
-                            <div class="oficina-name">${of.nome}</div>
-                            <div class="oficina-sub">${of.endereco || ''}</div>
+                            <div class="oficina-name">${esc(of.nome)}</div>
+                            <div class="oficina-sub">${esc(of.endereco || '')}</div>
                         </div>
                     </div>
                     <div class="oficina-tags">${tagsEsp(of.especialidades)}</div>
@@ -167,10 +167,10 @@ async function load() {
                         <span>Horário: ${esc(of.horario_resumo)}</span>
                     </div>
                     <div style="margin-top:8px;font-size:12px;color:var(--gray-500)">
-                        Veículos: <strong>${of.tipos_veiculo || '—'}</strong>
+                        Veículos: <strong>${esc(of.tipos_veiculo || '—')}</strong>
                     </div>
                     <div class="oficina-actions">
-                        ${of.telefone ? `<a href="tel:${of.telefone}" class="btn btn-outline btn-sm">${Icons.phone(14)} Ligar</a>` : ''}
+                        ${of.telefone ? `<a href="tel:${esc(of.telefone)}" class="btn btn-outline btn-sm">${Icons.phone(14)} Ligar</a>` : ''}
                         <a href="detalhe_oficina.html?id=${of.id}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center">Ver detalhes</a>
                         <button type="button" class="fav-btn active" data-fav="${of.id}" title="Remover dos favoritos">
                             ${Icons.star(18, true)}

@@ -118,6 +118,45 @@ def opcao(valor, permitidas, rotulo, obrigatorio=True):
     return valor
 
 
+_RE_PLACA_ANTIGA = re.compile(r'^[A-Z]{3}[0-9]{4}$')
+_RE_PLACA_MERCOSUL = re.compile(r'^[A-Z]{3}[0-9][A-Z][0-9]{2}$')
+
+
+def normalizar_placa(valor):
+    return re.sub(r'[\s\-]', '', str(valor or '')).upper()
+
+
+def placa(valor):
+    """Aceita ABC-1234 / ABC1234 (antiga) e ABC1D23 (Mercosul); guarda sem hífen, maiúscula."""
+    p = normalizar_placa(valor)
+    if not p:
+        raise erro('Placa é obrigatória.')
+    if not (_RE_PLACA_ANTIGA.match(p) or _RE_PLACA_MERCOSUL.match(p)):
+        raise erro('Placa inválida. Use o formato antigo (ABC-1234) ou Mercosul (ABC1D23).')
+    return p
+
+
+def cnh(valor, obrigatorio=False):
+    digitos = apenas_digitos(valor)
+    if not digitos:
+        if obrigatorio:
+            raise erro('CNH é obrigatória.')
+        return None
+    if len(digitos) != 11:
+        raise erro('CNH inválida: informe os 11 dígitos do número de registro.')
+    return digitos
+
+
+def senha(valor, rotulo='Senha', min_len=6, max_len=128):
+    if not isinstance(valor, str) or not valor:
+        raise erro(f'{rotulo} é obrigatória.')
+    if len(valor) < min_len:
+        raise erro(f'{rotulo} deve ter ao menos {min_len} caracteres.')
+    if len(valor) > max_len:
+        raise erro(f'{rotulo} deve ter no máximo {max_len} caracteres.')
+    return valor
+
+
 def identificador(valor, rotulo, obrigatorio=False):
     if valor in (None, '', 0, '0'):
         if obrigatorio:

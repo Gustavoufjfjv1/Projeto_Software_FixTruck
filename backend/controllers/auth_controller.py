@@ -48,7 +48,9 @@ class AuthController:
 
     def redefinir_senha(self):
         try:
-            return jsonify(RedefinirSenhaService().executar(request.get_json(silent=True) or {}))
+            return jsonify(RedefinirSenhaService().executar(
+                request.get_json(silent=True) or {}, ip=request.remote_addr or 'desconhecido'
+            ))
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
 

@@ -1,3 +1,5 @@
+import validacoes as v
+from utils import STATUS_RESOLVIDO
 from repositories import OcorrenciaRepository
 from services.erros import ServiceError
 
@@ -7,9 +9,9 @@ class AtualizarStatusOcorrenciaService:
         oc = OcorrenciaRepository.buscar_da_empresa(ocorrencia_id, empresa_id)
         if not oc:
             raise ServiceError('Ocorrência não encontrada.', 404)
-        novo_status = dados.get('status')
-        if novo_status not in ['aberta', 'em_atendimento']:
-            raise ServiceError('Status inválido.', 400)
+        if oc.status == STATUS_RESOLVIDO:
+            raise ServiceError('Esta ocorrência já está resolvida.', 409)
+        novo_status = v.opcao(dados.get('status'), ['aberta', 'em_atendimento'], 'Status')
         oc.status = novo_status
         oc.atualizar()
         return {'mensagem': 'Status atualizado.'}
