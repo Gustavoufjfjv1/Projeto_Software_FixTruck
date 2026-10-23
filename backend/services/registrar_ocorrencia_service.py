@@ -4,11 +4,13 @@ from services.erros import ServiceError, agora_local
 
 
 class RegistrarOcorrenciaService:
-    def executar(self, empresa_id, dados):
+    def executar(self, empresa_id, dados, motorista=None):
+        """Registra uma ocorrência. Com `motorista`, só aceita veículo vinculado a ele."""
         veiculo_id = dados.get('veiculo_id') or None
         motorista_id = dados.get('motorista_id') or None
         tipo_problema = dados.get('tipo_problema')
         pane_total = 1 if dados.get('pane_total') else 0
+        descricao = (dados.get('descricao') or '').strip() or None
         lat = dados.get('lat')
         lon = dados.get('lon')
         via = (dados.get('via') or '').strip()
@@ -38,7 +40,17 @@ class RegistrarOcorrenciaService:
             )
 
         tipo_veiculo = dados.get('tipo_veiculo', 'pesado')
-        if veiculo_id:
+        if motorista is not None:
+            if not veiculo_id:
+                raise ServiceError('Selecione o veículo vinculado a você.', 422)
+            if not descricao or len(descricao) < 5:
+                raise ServiceError('Descreva o problema (mínimo 5 caracteres).', 422)
+            veiculo = VeiculoRepository.buscar_da_empresa(veiculo_id, empresa_id)
+            if not veiculo or veiculo.motorista_id != motorista.id:
+                raise ServiceError('Você só pode registrar ocorrências do veículo vinculado a você.', 403)
+            tipo_veiculo = veiculo.tipo_veiculo
+            motorista_id = motorista.id
+        elif veiculo_id:
             veiculo = VeiculoRepository.buscar_da_empresa(veiculo_id, empresa_id)
             if veiculo:
                 tipo_veiculo = veiculo.tipo_veiculo
@@ -53,11 +65,13 @@ class RegistrarOcorrenciaService:
             tipo_veiculo=tipo_veiculo,
             tipo_problema=tipo_problema,
             pane_total=pane_total,
+            descricao=descricao,
             lat=lat or None,
             lon=lon or None,
             endereco=endereco_final,
             status='aberta',
             data_abertura=agora_local(),
+            registrada_por='motorista' if motorista is not None else 'empresa',
         )
         ocorrencia.salvar()
         return {'mensagem': 'Ocorrência registrada.', 'id': ocorrencia.id}

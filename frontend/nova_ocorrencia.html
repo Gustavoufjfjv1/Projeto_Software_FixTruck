@@ -13,7 +13,7 @@
     <div class="page-header">
         <div>
             <h1>Nova Ocorrência</h1>
-            <p>Registro pelo motorista: informe o problema mecânico e o local da ocorrência</p>
+            <p>Registro pelo gestor: informe o problema mecânico e o local da ocorrência</p>
         </div>
         <a href="ocorrencias.html" id="btnVoltar" class="btn btn-outline"><span data-icon="arrowLeft" data-size="16"></span> Voltar</a>
     </div>
@@ -22,74 +22,45 @@
         <div class="card-header"><span class="card-title">Dados da Ocorrência</span></div>
 
         <div class="alert alert-info">
-            Informe onde você está (rodovia/avenida, KM e cidade) ou use o GPS. Pelo menos uma das opções é necessária.
+            Informe onde o veículo está (rodovia/avenida, KM e cidade) ou use o GPS. Pelo menos uma das opções é necessária.
         </div>
+        <div id="form-erros"></div>
 
-        <form id="ocForm">
+        <form id="ocForm" novalidate>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Veículo da frota *</label>
-                    <select name="veiculo_id" id="veiculo_id" required>
+                    <label for="veiculo_id">Veículo da frota *</label>
+                    <select id="veiculo_id" required>
                         <option value="">Selecione o veículo...</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Motorista</label>
-                    <select name="motorista_id" id="motorista_id">
+                    <label for="motorista_id">Motorista</label>
+                    <select id="motorista_id">
                         <option value="">Vinculado ao veículo</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Tipo de problema mecânico *</label>
-                <select name="tipo_problema" id="tipo_problema" required>
-                    <option value="">Selecione...</option>
-                    <option value="mecânica">Mecânica</option>
-                    <option value="elétrica">Elétrica</option>
-                    <option value="hidráulica">Hidráulica</option>
-                    <option value="borracharia">Borracharia / Pneu</option>
-                    <option value="não identificado">Não identificado</option>
-                </select>
+                <label for="tipo_problema">Tipo de problema mecânico *</label>
+                <select id="tipo_problema" required></select>
             </div>
 
-            <input type="hidden" name="tipo_veiculo" id="tipo_veiculo" value="pesado">
+            <div class="form-group">
+                <label for="descricao">Descrição (opcional)</label>
+                <textarea id="descricao" maxlength="500" placeholder="O que aconteceu? Ex.: barulho no motor e perda de força"></textarea>
+            </div>
 
             <div class="form-group">
                 <label>Pane Total?</label>
                 <label class="checkbox-label">
-                    <input type="checkbox" name="pane_total" id="pane_total" value="1">
+                    <input type="checkbox" id="pane_total" value="1">
                     Sim — o veículo não anda (só serão recomendadas oficinas com guincho)
                 </label>
             </div>
 
-            <div class="form-group">
-                <label>Rodovia / Avenida *</label>
-                <input type="text" name="via" id="via" placeholder="Ex: Rodovia Anhanguera ou Av. Brasil">
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>KM</label>
-                    <input type="text" name="km" id="km" inputmode="numeric" placeholder="Ex: 45">
-                </div>
-                <div class="form-group">
-                    <label>Cidade *</label>
-                    <input type="text" name="cidade" id="cidade" placeholder="Ex: Campinas/SP">
-                </div>
-            </div>
-            <div id="enderecoStatus" style="font-size:12px;color:var(--gray-400);margin:-8px 0 16px"></div>
-
-            <div class="form-group">
-                <label>Localização atual (GPS) — opcional</label>
-                <button type="button" class="location-btn" id="locBtn">
-                    Usar minha localização atual
-                </button>
-                <input type="hidden" name="lat" id="lat">
-                <input type="hidden" name="lon" id="lon">
-                <div id="locStatus" style="font-size:12px;color:var(--gray-400);margin-top:6px">
-                    Opcional: clique para capturar as coordenadas e filtrar oficinas por distância.
-                </div>
-            </div>
+            <div id="local-container"></div>
 
             <div style="display:flex;gap:12px;margin-top:8px">
                 <button type="submit" class="btn btn-primary" style="flex:1" id="submitBtn">
@@ -104,151 +75,67 @@
 <script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/geo.js"></script>
+<script src="js/localizacao.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('ocorrencias');
 
 document.getElementById('btnVoltar').href = voltarPara('ocorrencias.html');
+document.getElementById('local-container').innerHTML = Localizacao.html();
+Localizacao.ligar();
+
+function mostrarErro(msg) {
+    document.getElementById('form-erros').innerHTML = msg ? `<div class="alert alert-warning">${esc(msg)}</div>` : '';
+    if (msg) showFlash(msg, 'error');
+}
 
 document.getElementById('veiculo_id').addEventListener('change', () => {
     const opt = document.getElementById('veiculo_id').selectedOptions[0];
-    if (!opt) return;
-    const mid = opt.dataset.motorista;
-    const tipo = opt.dataset.tipo;
-    if (tipo) document.getElementById('tipo_veiculo').value = tipo;
-    if (mid) document.getElementById('motorista_id').value = mid;
-});
-
-const btn = document.getElementById('locBtn');
-const status = document.getElementById('locStatus');
-const enderecoStatus = document.getElementById('enderecoStatus');
-
-async function preencherEnderecoPorGps(lat, lon) {
-    const resultado = await Geo.enderecoPorCoordenadas(lat, lon);
-    if (!resultado) return false;
-    const campoVia = document.getElementById('via');
-    const campoCidade = document.getElementById('cidade');
-    if (resultado.via && !campoVia.value) campoVia.value = resultado.via;
-    if (resultado.cidade && !campoCidade.value) campoCidade.value = resultado.cidade;
-    return Boolean(resultado.via || resultado.cidade);
-}
-
-// Quando o endereço é digitado manualmente (sem GPS), busca as coordenadas
-// automaticamente para que a busca por distância continue funcionando.
-async function tentarGeocodificarEndereco() {
-    const lat = document.getElementById('lat');
-    const lon = document.getElementById('lon');
-    if (lat.value && lon.value) return; // já tem coordenadas (GPS já usado)
-
-    const via = document.getElementById('via').value.trim();
-    const cidade = document.getElementById('cidade').value.trim();
-    if (!via && !cidade) return;
-
-    enderecoStatus.textContent = 'Localizando endereço...';
-    const coords = await Geo.coordenadasPorEndereco(via, cidade);
-    if (coords) {
-        lat.value = coords.lat;
-        lon.value = coords.lon;
-        enderecoStatus.textContent = 'Endereço localizado — a busca por oficinas poderá filtrar por distância.';
-        enderecoStatus.style.color = 'var(--green-dark)';
-    } else {
-        enderecoStatus.textContent = 'Não foi possível localizar este endereço automaticamente. A ocorrência ainda pode ser registrada, mas a busca por distância pode não funcionar.';
-        enderecoStatus.style.color = 'var(--gray-400)';
-    }
-}
-
-document.getElementById('via').addEventListener('blur', tentarGeocodificarEndereco);
-document.getElementById('cidade').addEventListener('blur', tentarGeocodificarEndereco);
-
-btn.addEventListener('click', () => {
-    btn.disabled = true;
-    btn.textContent = 'Obtendo localização...';
-    if (!navigator.geolocation) {
-        status.textContent = 'Geolocalização não suportada neste navegador.';
-        btn.disabled = false;
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        document.getElementById('lat').value = lat;
-        document.getElementById('lon').value = lon;
-        status.textContent = `Localização capturada: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Buscando endereço...`;
-        status.style.color = 'var(--green-dark)';
-        btn.textContent = 'Localização capturada ✓';
-        btn.disabled = false;
-
-        const preencheu = await preencherEnderecoPorGps(lat, lon);
-        status.textContent = preencheu
-            ? `Localização capturada: ${lat.toFixed(5)}, ${lon.toFixed(5)} — endereço preenchido automaticamente, confira antes de enviar.`
-            : `Localização capturada: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Não foi possível identificar o endereço — preencha manualmente se necessário.`;
-    }, () => {
-        status.textContent = 'Não foi possível obter a localização GPS. Verifique as permissões do navegador.';
-        status.style.color = 'var(--red)';
-        btn.textContent = 'Usar minha localização atual';
-        btn.disabled = false;
-    }, { enableHighAccuracy: true, timeout: 12000 });
+    if (opt && opt.dataset.motorista) document.getElementById('motorista_id').value = opt.dataset.motorista;
 });
 
 document.getElementById('ocForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await tentarGeocodificarEndereco();
-    const via = document.getElementById('via').value.trim();
-    const km = document.getElementById('km').value.trim();
-    const cidade = document.getElementById('cidade').value.trim();
-    const lat = document.getElementById('lat').value;
-    const lon = document.getElementById('lon').value;
-    const partes = [];
-    if (via) partes.push(via);
-    if (km) partes.push(`KM ${km}`);
-    if (cidade) partes.push(cidade);
-    const endereco = partes.join(' — ');
+    mostrarErro('');
+    if (!document.getElementById('veiculo_id').value) return mostrarErro('Selecione o veículo da frota.');
+    if (!document.getElementById('tipo_problema').value) return mostrarErro('Selecione o tipo de problema.');
+    const local = await Localizacao.coletar();
+    if (local.erro) return mostrarErro(local.erro);
 
-    if (!endereco && (!lat || !lon)) {
-        showFlash('Informe a rodovia/avenida e a cidade, ou capture o GPS.', 'error');
-        return;
-    }
-    if (!via || !cidade) {
-        if (!lat || !lon) {
-            showFlash('Preencha a rodovia/avenida e a cidade para continuar sem GPS.', 'error');
-            return;
-        }
-    }
-
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
     try {
         const res = await Api.post('/api/ocorrencias', {
             veiculo_id: document.getElementById('veiculo_id').value || null,
             motorista_id: document.getElementById('motorista_id').value || null,
             tipo_problema: document.getElementById('tipo_problema').value,
+            descricao: document.getElementById('descricao').value,
             pane_total: document.getElementById('pane_total').checked,
-            lat: lat || null,
-            lon: lon || null,
-            via,
-            km,
-            cidade,
-            endereco,
-            tipo_veiculo: document.getElementById('tipo_veiculo').value,
+            ...local.dados,
         });
         showFlash(res.mensagem || 'Ocorrência registrada.', 'success');
         window.location.href = `buscar_oficinas.html?id=${res.id}`;
     } catch (err) {
-        showFlash(err.message, 'error');
+        mostrarErro(err.message);
+        btn.disabled = false;
     }
 });
 
 (async () => {
     try {
-        const data = await Api.get('/api/ocorrencias/form-data');
+        const [opcoes, data] = await Promise.all([carregarOpcoes(), Api.get('/api/ocorrencias/form-data')]);
+        document.getElementById('tipo_problema').innerHTML = optionsHtml(opcoes.tipos_problema, '', 'Selecione...');
         const veiculos = data.veiculos || [];
         const motoristas = data.motoristas || [];
         document.getElementById('veiculo_id').innerHTML =
             '<option value="">Selecione o veículo...</option>' +
             veiculos.map(v =>
-                `<option value="${v.id}" data-motorista="${v.motorista_id || ''}" data-tipo="${v.tipo_veiculo || 'pesado'}">${v.placa} — ${v.modelo || v.tipo_veiculo}${v.motorista_nome ? ' (' + v.motorista_nome + ')' : ''}</option>`
+                `<option value="${v.id}" data-motorista="${v.motorista_id || ''}">${esc(v.placa)} — ${esc(v.modelo || v.tipo_veiculo)}${v.motorista_nome ? ' (' + esc(v.motorista_nome) + ')' : ''}</option>`
             ).join('');
         document.getElementById('motorista_id').innerHTML =
             '<option value="">Vinculado ao veículo</option>' +
-            motoristas.map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
+            motoristas.map(m => `<option value="${m.id}">${esc(m.nome)}</option>`).join('');
+        hydrateIcons();
     } catch (err) {
         showFlash(err.message, 'error');
     }

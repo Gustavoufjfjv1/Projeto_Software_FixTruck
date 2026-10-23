@@ -34,6 +34,12 @@
                     <input type="text" name="telefone" id="mot_telefone" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000" autocomplete="tel">
                 </div>
             </div>
+            <div class="form-group">
+                <label>E-mail de acesso (opcional)</label>
+                <input type="email" name="email" id="mot_email" maxlength="120" placeholder="motorista@transportadora.com" autocomplete="off">
+                <small style="color:var(--gray-500)">Com e-mail, o motorista recebe uma senha provisória para entrar no app e registrar ocorrências.</small>
+            </div>
+            <div id="senha-gerada"></div>
             <button type="submit" class="btn btn-primary btn-sm">Cadastrar motorista</button>
         </form>
     </div>
@@ -101,7 +107,7 @@ Masks.bind(document.getElementById('vei_placa'), 'placa');
 function optionsMotoristas(motoristas, selectedId) {
     return '<option value="">Sem motorista</option>' +
         motoristas.map(m =>
-            `<option value="${m.id}" ${String(selectedId) === String(m.id) ? 'selected' : ''}>${m.nome}</option>`
+            `<option value="${m.id}" ${String(selectedId) === String(m.id) ? 'selected' : ''}>${esc(m.nome)}</option>`
         ).join('');
 }
 
@@ -185,21 +191,45 @@ async function load() {
                                 <th>CNH</th>
                                 <th>Telefone</th>
                                 <th>Veículo</th>
+                                <th>Acesso ao app</th>
                             </tr>
                         </thead>
                         <tbody>
                         ${motoristas.map(m => `
                             <tr>
-                                <td style="font-weight:600">${m.nome}</td>
-                                <td>${m.cnh || '—'}</td>
-                                <td>${m.telefone || '—'}</td>
-                                <td>${m.veiculo_placa || '—'}</td>
+                                <td style="font-weight:600">${esc(m.nome)}</td>
+                                <td>${esc(m.cnh || '—')}</td>
+                                <td>${esc(m.telefone || '—')}</td>
+                                <td>${esc(m.veiculo_placa || '—')}</td>
+                                <td>
+                                    ${m.tem_acesso
+                                        ? `<span class="badge badge-green">${esc(m.email)}</span>${m.trocar_senha ? ' <span class="badge badge-orange">troca de senha pendente</span>' : ''}`
+                                        : '<span class="badge badge-gray">sem acesso</span>'}
+                                    <form class="acesso-form" data-motorista="${m.id}" style="display:flex;gap:6px;margin-top:6px">
+                                        <input type="email" class="filter-select" placeholder="e-mail" value="${esc(m.email || '')}" required maxlength="120" style="min-width:160px">
+                                        <button type="submit" class="btn btn-outline btn-sm">${m.tem_acesso ? 'Nova senha' : 'Dar acesso'}</button>
+                                    </form>
+                                </td>
                             </tr>
                         `).join('')}
                         </tbody>
                     </table>
                 </div>
             `;
+            motEl.querySelectorAll('.acesso-form').forEach(form => {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    try {
+                        const res = await Api.post(`/api/frota/motoristas/${form.dataset.motorista}/acesso`, {
+                            email: form.querySelector('input').value,
+                        });
+                        mostrarSenha(res);
+                        load();
+                    } catch (err) {
+                        showFlash(err.message, 'error');
+                    }
+                });
+            });
         } else {
             motEl.innerHTML = `
                 <div class="empty-state">
@@ -213,6 +243,17 @@ async function load() {
     }
 }
 
+function mostrarSenha(res) {
+    showFlash(res.mensagem, 'success');
+    if (!res.senha_temporaria) return;
+    document.getElementById('senha-gerada').innerHTML = `
+        <div class="alert alert-info">
+            Acesso de <strong>${esc(res.email)}</strong> — senha provisória: <strong style="font-family:monospace;font-size:16px">${esc(res.senha_temporaria)}</strong><br>
+            Anote e entregue ao motorista; ela não será exibida de novo. Ele deve trocá-la no primeiro login em <em>motorista_login.html</em>.
+        </div>`;
+    document.getElementById('senha-gerada').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 document.getElementById('formMotorista').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
@@ -220,8 +261,9 @@ document.getElementById('formMotorista').addEventListener('submit', async (e) =>
             nome: document.getElementById('mot_nome').value,
             cnh: document.getElementById('mot_cnh').value,
             telefone: document.getElementById('mot_telefone').value,
+            email: document.getElementById('mot_email').value,
         });
-        showFlash(res.mensagem || 'Motorista cadastrado.', 'success');
+        mostrarSenha(res);
         e.target.reset();
         load();
     } catch (err) {

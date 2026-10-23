@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso do Motorista — FIXTRUCK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-shell" data-papel="motorista">
+    <a href="index.html" class="auth-back"><span data-icon="arrowLeft" data-size="16"></span> Voltar ao início</a>
+
+    <div class="auth-layout">
+        <div class="auth-card">
+            <div class="auth-card-top">
+                <span class="brand-pill">
+                    <img src="img/logo-truck.svg" alt="" class="brand-pill-icon">
+                    FIX<strong>TRUCK</strong>
+                </span>
+            </div>
+            <div class="auth-card-body">
+                <h1>Acesso do Motorista</h1>
+                <p class="auth-card-sub">Use o e-mail e a senha que a sua transportadora cadastrou</p>
+
+                <div id="alert-box"></div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" placeholder="voce@transportadora.com" required maxlength="120">
+                    </div>
+                    <div class="form-group">
+                        <label for="senha">Senha</label>
+                        <input type="password" id="senha" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-neon btn-full btn-lg">Entrar <span class="icon-end" data-icon="arrowRight" data-size="18"></span></button>
+                </form>
+
+                <button type="button" class="btn btn-soft btn-full" style="margin-top:12px" id="demoBtn">Usar motorista demo</button>
+
+                <p class="auth-footer-text">
+                    É gestor da transportadora? <a href="login.html">Entrar como empresa</a>
+                </p>
+            </div>
+        </div>
+
+        <aside class="auth-aside">
+            <h2>O que o motorista pode fazer</h2>
+            <ul class="auth-aside-list">
+                <li><div><strong>Registrar a pane</strong><p>Informe o problema, a descrição e o local (GPS ou endereço) do veículo vinculado a você.</p></div></li>
+                <li><div><strong>Ver oficinas compatíveis</strong><p>Somente oficinas que atendem o problema, o veículo e estão abertas.</p></div></li>
+                <li><div><strong>Acompanhar o atendimento</strong><p>Veja o status das suas ocorrências abertas. A empresa acompanha tudo em tempo real.</p></div></li>
+            </ul>
+        </aside>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/icons.js"></script>
+    <script>
+    if (Api.isAuthenticated()) {
+        window.location.href = 'motorista_painel.html';
+    }
+
+    async function doLogin(email, senha) {
+        const alertBox = document.getElementById('alert-box');
+        alertBox.innerHTML = '';
+        try {
+            const data = await Api.post('/api/motorista/login', { email, senha });
+            Api.setSessionMotorista(data.token, data.motorista, data.empresa_nome);
+            window.location.href = data.trocar_senha ? 'motorista_trocar_senha.html' : 'motorista_painel.html';
+        } catch (err) {
+            alertBox.innerHTML = `<div class="alert alert-warning">${esc(err.message)}</div>`;
+        }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        doLogin(document.getElementById('email').value, document.getElementById('senha').value);
+    });
+
+    document.getElementById('demoBtn').addEventListener('click', () => {
+        doLogin('carlos@fixtruck.com', 'motorista123');
+    });
+    </script>
+</body>
+</html>

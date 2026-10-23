@@ -1,8 +1,17 @@
 const API_BASE = localStorage.getItem('fixtruck_api') || 'http://127.0.0.1:5000';
 
+// Páginas do motorista declaram <body data-papel="motorista">: usam outro token e outra tela de login.
 const Api = {
+  papel() {
+    return document.body && document.body.dataset.papel === 'motorista' ? 'motorista' : 'empresa';
+  },
+
+  loginPage() {
+    return this.papel() === 'motorista' ? 'motorista_login.html' : 'login.html';
+  },
+
   getToken() {
-    return localStorage.getItem('fixtruck_token');
+    return localStorage.getItem(this.papel() === 'motorista' ? 'fixtruck_motorista_token' : 'fixtruck_token');
   },
 
   setSession(token, empresa) {
@@ -12,7 +21,27 @@ const Api = {
     }
   },
 
+  setSessionMotorista(token, motorista, empresaNome) {
+    localStorage.setItem('fixtruck_motorista_token', token);
+    if (motorista) localStorage.setItem('fixtruck_motorista', JSON.stringify(motorista));
+    if (empresaNome != null) localStorage.setItem('fixtruck_motorista_empresa', empresaNome);
+  },
+
+  getMotorista() {
+    try {
+      return JSON.parse(localStorage.getItem('fixtruck_motorista') || 'null');
+    } catch {
+      return null;
+    }
+  },
+
   clearSession() {
+    if (this.papel() === 'motorista') {
+      localStorage.removeItem('fixtruck_motorista_token');
+      localStorage.removeItem('fixtruck_motorista');
+      localStorage.removeItem('fixtruck_motorista_empresa');
+      return;
+    }
     localStorage.removeItem('fixtruck_token');
     localStorage.removeItem('fixtruck_empresa');
   },
@@ -31,7 +60,7 @@ const Api = {
 
   requireAuth() {
     if (!this.isAuthenticated()) {
-      window.location.href = 'login.html';
+      window.location.href = this.loginPage();
       return false;
     }
     return true;
@@ -60,10 +89,17 @@ const Api = {
       }
     }
 
-    if (res.status === 401 && !path.startsWith('/api/auth/login')) {
+    const rotaDeLogin = path.startsWith('/api/auth/login') || path.startsWith('/api/motorista/login')
+      || path.startsWith('/api/motorista/trocar-senha');
+    if (res.status === 401 && !rotaDeLogin) {
       this.clearSession();
-      window.location.href = 'login.html';
+      window.location.href = this.loginPage();
       throw new Error('Não autenticado');
+    }
+
+    if (res.status === 403 && data && data.trocar_senha) {
+      window.location.href = 'motorista_trocar_senha.html';
+      throw new Error(data.erro);
     }
 
     if (!res.ok) {

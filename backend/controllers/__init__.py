@@ -6,6 +6,7 @@ from .oficina_controller import oficina_bp
 from .relatorio_controller import relatorio_bp
 from .perfil_controller import perfil_bp
 from .opcoes_controller import opcoes_bp
+from .motorista_controller import motorista_bp
 
 
 def registrar_blueprints(app):
@@ -17,3 +18,4 @@ def registrar_blueprints(app):
     app.register_blueprint(relatorio_bp)
     app.register_blueprint(perfil_bp)
     app.register_blueprint(opcoes_bp)
+    app.register_blueprint(motorista_bp)

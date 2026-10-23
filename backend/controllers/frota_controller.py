@@ -5,6 +5,7 @@ from services import (
     CadastrarMotoristaService,
     CadastrarVeiculoService,
     VincularMotoristaVeiculoService,
+    DefinirAcessoMotoristaService,
     ServiceError,
 )
 
@@ -26,6 +27,11 @@ class FrotaController:
             view_func=login_required(self.vincular_motorista),
             methods=['POST'],
         )
+        self.bp.add_url_rule(
+            '/motoristas/<int:motorista_id>/acesso',
+            view_func=login_required(self.definir_acesso),
+            methods=['POST'],
+        )
 
     def listar(self):
         return jsonify(ListarFrotaService().executar(g.empresa_id))
@@ -45,6 +51,14 @@ class FrotaController:
                 g.empresa_id, request.get_json(silent=True) or {}
             )
             return jsonify(resultado), 201
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
+    def definir_acesso(self, motorista_id):
+        try:
+            return jsonify(DefinirAcessoMotoristaService().executar(
+                g.empresa_id, motorista_id, request.get_json(silent=True) or {}
+            ))
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
 

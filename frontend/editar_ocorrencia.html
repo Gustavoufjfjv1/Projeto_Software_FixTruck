@@ -15,6 +15,7 @@
 <script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script src="js/geo.js"></script>
+<script src="js/localizacao.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('ocorrencias');
@@ -25,28 +26,18 @@ if (!id) {
     throw new Error('id');
 }
 
-function parseEndereco(endereco) {
-    if (!endereco || endereco.startsWith('GPS:')) return { via: '', km: '', cidade: '' };
-    const partes = endereco.split(' — ').map(p => p.trim());
-    const via = partes[0] || '';
-    const resto = partes.slice(1);
-    let km = '';
-    let cidade = '';
-    if (resto[0] && resto[0].toUpperCase().startsWith('KM ')) {
-        km = resto[0].slice(3).trim();
-        cidade = resto[1] || '';
-    } else {
-        cidade = resto[0] || '';
-    }
-    return { via, km, cidade };
+function mostrarErro(msg) {
+    document.getElementById('form-erros').innerHTML = msg ? `<div class="alert alert-warning">${esc(msg)}</div>` : '';
+    if (msg) showFlash(msg, 'error');
 }
 
 async function carregar() {
     const root = document.getElementById('page-root');
     try {
-        const [detalhe, formData] = await Promise.all([
+        const [detalhe, formData, opcoes] = await Promise.all([
             Api.get(`/api/ocorrencias/${id}`),
             Api.get('/api/ocorrencias/form-data'),
+            carregarOpcoes(),
         ]);
         const oc = detalhe.ocorrencia;
         const veiculos = formData.veiculos || [];
@@ -65,16 +56,15 @@ async function carregar() {
                     <a href="detalhe_ocorrencia.html?id=${id}" class="btn btn-primary btn-full">Ver detalhes da ocorrência</a>
                 </div>
             `;
-            hydrateIcons();
             return;
         }
 
-        const { via, km, cidade } = parseEndereco(oc.endereco);
+        const partes = Localizacao.separarEndereco(oc.endereco);
         const avisoVinculo = oc.status === 'em_atendimento' ? `
             <div class="alert alert-warning" style="margin-bottom:16px">
-                Esta ocorrência já está vinculada à oficina <strong>${oc.oficina_nome || '—'}</strong>.
-                Se você mudar o tipo de problema ou o veículo, considere buscar oficinas novamente
-                para confirmar que ela ainda é a mais adequada.
+                Esta ocorrência já está vinculada à oficina <strong>${esc(oc.oficina_nome || '—')}</strong>.
+                Se você mudar o tipo de problema ou o veículo, busque oficinas novamente
+                para confirmar que ela ainda é compatível.
             </div>
         ` : '';
 
@@ -90,83 +80,53 @@ async function carregar() {
             <div class="card">
                 <div class="card-header"><span class="card-title">Dados da Ocorrência</span></div>
                 ${avisoVinculo}
+                <div id="form-erros"></div>
 
-                <form id="ocForm">
+                <form id="ocForm" novalidate>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Veículo da frota</label>
-                            <select name="veiculo_id" id="veiculo_id">
+                            <label for="veiculo_id">Veículo da frota *</label>
+                            <select id="veiculo_id" required>
                                 <option value="">Selecione o veículo...</option>
-                                ${veiculos.map(v => `<option value="${v.id}" data-motorista="${v.motorista_id || ''}" data-tipo="${v.tipo_veiculo || 'pesado'}" ${String(oc.veiculo_id) === String(v.id) ? 'selected' : ''}>${v.placa} — ${v.modelo || v.tipo_veiculo}${v.motorista_nome ? ' (' + v.motorista_nome + ')' : ''}</option>`).join('')}
+                                ${veiculos.map(v => `<option value="${v.id}" data-motorista="${v.motorista_id || ''}" ${String(oc.veiculo_id) === String(v.id) ? 'selected' : ''}>${esc(v.placa)} — ${esc(v.modelo || v.tipo_veiculo)}${v.motorista_nome ? ' (' + esc(v.motorista_nome) + ')' : ''}</option>`).join('')}
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Motorista</label>
-                            <select name="motorista_id" id="motorista_id">
+                            <label for="motorista_id">Motorista</label>
+                            <select id="motorista_id">
                                 <option value="">Vinculado ao veículo</option>
-                                ${motoristas.map(m => `<option value="${m.id}" ${String(oc.motorista_id) === String(m.id) ? 'selected' : ''}>${m.nome}</option>`).join('')}
+                                ${motoristas.map(m => `<option value="${m.id}" ${String(oc.motorista_id) === String(m.id) ? 'selected' : ''}>${esc(m.nome)}</option>`).join('')}
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Tipo de problema mecânico *</label>
-                        <select name="tipo_problema" id="tipo_problema" required>
-                            <option value="">Selecione...</option>
-                            <option value="mecânica" ${oc.tipo_problema === 'mecânica' ? 'selected' : ''}>Mecânica</option>
-                            <option value="elétrica" ${oc.tipo_problema === 'elétrica' ? 'selected' : ''}>Elétrica</option>
-                            <option value="hidráulica" ${oc.tipo_problema === 'hidráulica' ? 'selected' : ''}>Hidráulica</option>
-                            <option value="borracharia" ${oc.tipo_problema === 'borracharia' ? 'selected' : ''}>Borracharia / Pneu</option>
-                            <option value="não identificado" ${oc.tipo_problema === 'não identificado' ? 'selected' : ''}>Não identificado</option>
-                        </select>
+                        <label for="tipo_problema">Tipo de problema mecânico *</label>
+                        <select id="tipo_problema" required>${optionsHtml(opcoes.tipos_problema, oc.tipo_problema, 'Selecione...')}</select>
                     </div>
 
-                    <input type="hidden" name="tipo_veiculo" id="tipo_veiculo" value="${oc.tipo_veiculo || 'pesado'}">
+                    <div class="form-group">
+                        <label for="descricao">Descrição (opcional)</label>
+                        <textarea id="descricao" maxlength="500">${esc(oc.descricao || '')}</textarea>
+                    </div>
 
                     <div class="form-group">
                         <label>Pane Total?</label>
                         <label class="checkbox-label">
-                            <input type="checkbox" name="pane_total" id="pane_total" value="1" ${oc.pane_total ? 'checked' : ''}>
+                            <input type="checkbox" id="pane_total" value="1" ${oc.pane_total ? 'checked' : ''}>
                             Sim — o veículo não anda (só serão recomendadas oficinas com guincho)
                         </label>
                     </div>
 
-                    <div class="form-group">
-                        <label>Rodovia / Avenida</label>
-                        <input type="text" name="via" id="via" value="${via}" placeholder="Ex: Rodovia Anhanguera ou Av. Brasil">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>KM</label>
-                            <input type="text" name="km" id="km" inputmode="numeric" value="${km}" placeholder="Ex: 45">
-                        </div>
-                        <div class="form-group">
-                            <label>Cidade</label>
-                            <input type="text" name="cidade" id="cidade" value="${cidade}" placeholder="Ex: Campinas/SP">
-                        </div>
-                    </div>
-                    <div id="enderecoStatus" style="font-size:12px;color:var(--gray-400);margin:-8px 0 16px"></div>
-
-                    <div class="form-group">
-                        <label>Localização atual (GPS) — opcional</label>
-                        <button type="button" class="location-btn" id="locBtn">Usar minha localização atual</button>
-                        <input type="hidden" name="lat" id="lat" value="${oc.lat || ''}">
-                        <input type="hidden" name="lon" id="lon" value="${oc.lon || ''}">
-                        <div id="locStatus" style="font-size:12px;color:var(--gray-400);margin-top:6px">
-                            ${oc.lat && oc.lon ? `GPS já registrado: ${oc.lat}, ${oc.lon}` : 'Opcional: clique para capturar as coordenadas.'}
-                        </div>
-                    </div>
+                    ${Localizacao.html({ ...partes, lat: oc.lat, lon: oc.lon })}
 
                     <div style="display:flex;gap:12px;margin-top:8px">
-                        <button type="submit" class="btn btn-primary" style="flex:1" id="submitBtn">
-                            Salvar Alterações
-                        </button>
+                        <button type="submit" class="btn btn-primary" style="flex:1" id="submitBtn">Salvar Alterações</button>
                     </div>
                 </form>
             </div>
         `;
-        hydrateIcons();
-        ligarFormulario(oc);
+        ligarFormulario();
     } catch (err) {
         showFlash(err.message, 'error');
         root.innerHTML = `
@@ -179,114 +139,32 @@ async function carregar() {
 }
 
 function ligarFormulario() {
+    Localizacao.ligar();
     document.getElementById('veiculo_id').addEventListener('change', () => {
         const opt = document.getElementById('veiculo_id').selectedOptions[0];
-        if (!opt || !opt.value) return;
-        const mid = opt.dataset.motorista;
-        const tipo = opt.dataset.tipo;
-        if (tipo) document.getElementById('tipo_veiculo').value = tipo;
-        if (mid) document.getElementById('motorista_id').value = mid;
-    });
-
-    const btn = document.getElementById('locBtn');
-    const status = document.getElementById('locStatus');
-    const enderecoStatus = document.getElementById('enderecoStatus');
-
-    async function tentarGeocodificarEndereco() {
-        const lat = document.getElementById('lat');
-        const lon = document.getElementById('lon');
-        if (lat.value && lon.value) return;
-        const via = document.getElementById('via').value.trim();
-        const cidade = document.getElementById('cidade').value.trim();
-        if (!via && !cidade) return;
-        enderecoStatus.textContent = 'Localizando endereço...';
-        const coords = await Geo.coordenadasPorEndereco(via, cidade);
-        if (coords) {
-            lat.value = coords.lat;
-            lon.value = coords.lon;
-            enderecoStatus.textContent = 'Endereço localizado — a busca por oficinas poderá filtrar por distância.';
-            enderecoStatus.style.color = 'var(--green-dark)';
-        } else {
-            enderecoStatus.textContent = 'Não foi possível localizar este endereço automaticamente.';
-            enderecoStatus.style.color = 'var(--gray-400)';
-        }
-    }
-
-    document.getElementById('via').addEventListener('blur', tentarGeocodificarEndereco);
-    document.getElementById('cidade').addEventListener('blur', tentarGeocodificarEndereco);
-
-    btn.addEventListener('click', () => {
-        btn.disabled = true;
-        btn.textContent = 'Obtendo localização...';
-        if (!navigator.geolocation) {
-            status.textContent = 'Geolocalização não suportada neste navegador.';
-            btn.disabled = false;
-            return;
-        }
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            const lat = pos.coords.latitude;
-            const lon = pos.coords.longitude;
-            document.getElementById('lat').value = lat;
-            document.getElementById('lon').value = lon;
-            status.textContent = `Localização capturada: ${lat.toFixed(5)}, ${lon.toFixed(5)}.`;
-            status.style.color = 'var(--green-dark)';
-            btn.textContent = 'Localização capturada ✓';
-            btn.disabled = false;
-
-            const campoVia = document.getElementById('via');
-            const campoCidade = document.getElementById('cidade');
-            if (!campoVia.value && !campoCidade.value) {
-                const resultado = await Geo.enderecoPorCoordenadas(lat, lon);
-                if (resultado) {
-                    if (resultado.via) campoVia.value = resultado.via;
-                    if (resultado.cidade) campoCidade.value = resultado.cidade;
-                }
-            }
-        }, () => {
-            status.textContent = 'Não foi possível obter a localização GPS. Verifique as permissões do navegador.';
-            status.style.color = 'var(--red)';
-            btn.textContent = 'Usar minha localização atual';
-            btn.disabled = false;
-        }, { enableHighAccuracy: true, timeout: 12000 });
+        if (opt && opt.dataset.motorista) document.getElementById('motorista_id').value = opt.dataset.motorista;
     });
 
     document.getElementById('ocForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        await tentarGeocodificarEndereco();
-        const via = document.getElementById('via').value.trim();
-        const km = document.getElementById('km').value.trim();
-        const cidade = document.getElementById('cidade').value.trim();
-        const lat = document.getElementById('lat').value;
-        const lon = document.getElementById('lon').value;
-        const partes = [];
-        if (via) partes.push(via);
-        if (km) partes.push(`KM ${km}`);
-        if (cidade) partes.push(cidade);
-        const endereco = partes.join(' — ');
-
-        if (!endereco && (!lat || !lon)) {
-            showFlash('Informe a rodovia/avenida e a cidade, ou capture o GPS.', 'error');
-            return;
-        }
-
+        mostrarErro('');
+        if (!document.getElementById('veiculo_id').value) return mostrarErro('Selecione o veículo da frota.');
+        if (!document.getElementById('tipo_problema').value) return mostrarErro('Selecione o tipo de problema.');
+        const local = await Localizacao.coletar();
+        if (local.erro) return mostrarErro(local.erro);
         try {
             const res = await Api.put(`/api/ocorrencias/${id}`, {
                 veiculo_id: document.getElementById('veiculo_id').value || null,
                 motorista_id: document.getElementById('motorista_id').value || null,
                 tipo_problema: document.getElementById('tipo_problema').value,
+                descricao: document.getElementById('descricao').value,
                 pane_total: document.getElementById('pane_total').checked,
-                lat: lat || null,
-                lon: lon || null,
-                via,
-                km,
-                cidade,
-                endereco,
-                tipo_veiculo: document.getElementById('tipo_veiculo').value,
+                ...local.dados,
             });
             showFlash(res.mensagem || 'Ocorrência atualizada.', 'success');
             window.location.href = `detalhe_ocorrencia.html?id=${id}`;
         } catch (err) {
-            showFlash(err.message, 'error');
+            mostrarErro(err.message);
         }
     });
 }

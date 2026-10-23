@@ -25,6 +25,15 @@ class VeiculoRepository:
         return rows_to_list(rows)
 
     @staticmethod
+    def listar_do_motorista(motorista_id, empresa_id):
+        rows = get_db().execute(
+            """SELECT id, placa, modelo, marca, tipo_veiculo, motorista_id FROM veiculos
+               WHERE motorista_id=? AND empresa_id=? ORDER BY placa""",
+            (motorista_id, empresa_id),
+        ).fetchall()
+        return rows_to_list(rows)
+
+    @staticmethod
     def buscar_da_empresa(veiculo_id, empresa_id):
         row = get_db().execute(
             'SELECT id FROM veiculos WHERE id=? AND empresa_id=?',
