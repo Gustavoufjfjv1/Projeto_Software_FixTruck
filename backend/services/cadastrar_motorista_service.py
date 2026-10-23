@@ -1,3 +1,4 @@
+import validacoes as v
 from models import Motorista
 from services.acesso_motorista_service import DefinirAcessoMotoristaService
 from services.erros import ServiceError
@@ -5,18 +6,16 @@ from services.erros import ServiceError
 
 class CadastrarMotoristaService:
     def executar(self, empresa_id, dados):
-        nome = (dados.get('nome') or '').strip()
-        if not nome:
-            raise ServiceError('Nome do motorista é obrigatório.', 400)
         motorista = Motorista(
             empresa_id=empresa_id,
-            nome=nome,
-            cnh=dados.get('cnh', ''),
-            telefone=dados.get('telefone', ''),
+            nome=v.texto(dados.get('nome'), 'Nome do motorista', max_len=120, min_len=3),
+            cnh=v.cnh(dados.get('cnh')),
+            telefone=v.telefone(dados.get('telefone')),
         )
+        email = v.email(dados.get('email'), obrigatorio=False)
         motorista.salvar()
         resposta = {'mensagem': 'Motorista cadastrado.', 'id': motorista.id}
-        if dados.get('email'):
+        if email:
             try:
                 acesso = DefinirAcessoMotoristaService().executar(empresa_id, motorista.id, dados)
             except ServiceError:

@@ -42,7 +42,7 @@ if (!id) {
                 <div class="card" style="max-width:600px">
                     <div class="alert alert-info">
                         Esta ocorrência já foi encerrada em ${formatDate(oc.data_encerramento)},
-                        com a oficina <strong>${oc.oficina_nome || '—'}</strong>. Não é possível encerrá-la novamente.
+                        com a oficina <strong>${esc(oc.oficina_nome || '—')}</strong>. Não é possível encerrá-la novamente.
                     </div>
                     <a href="detalhe_ocorrencia.html?id=${id}" class="btn btn-primary btn-full">Ver detalhes da ocorrência</a>
                 </div>
@@ -64,9 +64,9 @@ if (!id) {
                 <div class="card">
                     <div class="card-header"><span class="card-title">Dados da Ocorrência</span></div>
                     <div class="info-row"><span class="info-label">Tipo de veículo</span><span class="info-value" style="text-transform:capitalize">${oc.tipo_veiculo || '—'}</span></div>
-                    <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">${oc.tipo_problema || '—'}</span></div>
+                    <div class="info-row"><span class="info-label">Tipo de problema</span><span class="info-value" style="text-transform:capitalize">${esc(oc.tipo_problema || '—')}</span></div>
                     <div class="info-row"><span class="info-label">Pane total</span><span class="info-value">${oc.pane_total ? 'Sim' : 'Não'}</span></div>
-                    <div class="info-row"><span class="info-label">Local</span><span class="info-value" style="font-size:13px">${oc.endereco || '—'}</span></div>
+                    <div class="info-row"><span class="info-label">Local</span><span class="info-value" style="font-size:13px">${esc(oc.endereco || '—')}</span></div>
                     <div class="info-row"><span class="info-label">Abertura</span><span class="info-value" style="font-size:13px">${formatDate(oc.data_abertura)}</span></div>
                 </div>
 
@@ -84,7 +84,7 @@ if (!id) {
                                 <option value="">Selecione a oficina...</option>
                                 ${oficinas.map(of => {
                                     const sel = String(oficinaPre || oc.oficina_id || '') === String(of.id) ? 'selected' : '';
-                                    return `<option value="${of.id}" ${sel}>${of.nome} — ${of.endereco || ''}</option>`;
+                                    return `<option value="${of.id}" ${sel}>${esc(of.nome)} — ${esc(of.endereco || '')}</option>`;
                                 }).join('')}
                             </select>
                         </div>
@@ -102,7 +102,7 @@ if (!id) {
                         </div>
                         <div class="form-group">
                             <label>Observações (opcional)</label>
-                            <textarea name="observacoes" id="observacoes" placeholder="Descreva o que foi feito, peças trocadas, valor pago, etc..."></textarea>
+                            <textarea name="observacoes" id="observacoes" maxlength="1000" placeholder="Descreva o que foi feito, peças trocadas, valor pago, etc..."></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary btn-full">Confirmar — status resolvido</button>
                     </form>

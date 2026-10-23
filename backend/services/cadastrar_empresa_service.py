@@ -1,23 +1,27 @@
+from werkzeug.security import generate_password_hash
+
+import validacoes as v
 from models import Empresa
 from repositories import EmpresaRepository
 from services.erros import ServiceError
 
 
+def validar_qtd_caminhoes(valor):
+    qtd = v.numero(valor if valor not in (None, '') else 0, 'Quantidade de caminhões', minimo=0, maximo=100000)
+    if qtd != int(qtd):
+        raise v.erro('Quantidade de caminhões deve ser um número inteiro.')
+    return int(qtd)
+
+
 class CadastrarEmpresaService:
     def executar(self, dados):
-        nome = (dados.get('nome') or '').strip()
-        email = (dados.get('email') or '').strip().lower()
-        senha = dados.get('senha') or ''
-        qtd_caminhoes = dados.get('qtd_caminhoes') or 0
-
-        if not nome or not email or not senha:
-            raise ServiceError('Nome, e-mail e senha são obrigatórios.', 400)
-        if len(senha) < 6:
-            raise ServiceError('A senha deve ter ao menos 6 caracteres.', 400)
+        nome = v.texto(dados.get('nome'), 'Nome da empresa', max_len=120, min_len=2)
+        email = v.email(dados.get('email'))
+        senha = v.senha(dados.get('senha'))
+        qtd_caminhoes = validar_qtd_caminhoes(dados.get('qtd_caminhoes'))
         if EmpresaRepository.buscar_por_email(email):
-            raise ServiceError('Email já cadastrado.', 409)
+            raise ServiceError('Este e-mail já está cadastrado.', 409)
 
-        from werkzeug.security import generate_password_hash
         empresa = Empresa(
             nome=nome, email=email, senha=generate_password_hash(senha), qtd_caminhoes=qtd_caminhoes
         )

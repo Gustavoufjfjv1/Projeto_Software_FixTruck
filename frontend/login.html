@@ -113,7 +113,7 @@
             Api.setSession(data.token, data.empresa);
             window.location.href = 'dashboard.html';
         } catch (err) {
-            alertBox.innerHTML = `<div class="alert alert-warning">${err.message}</div>`;
+            alertBox.innerHTML = `<div class="alert alert-warning">${esc(err.message)}</div>`;
         }
     }
 

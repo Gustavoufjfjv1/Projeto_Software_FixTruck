@@ -39,15 +39,8 @@
                 </form>
 
                 <div id="resultado-box" style="display:none;margin-top:20px">
-                    <div class="alert alert-info">
-                        Este é um MVP acadêmico sem envio real de e-mail. Em produção, o código abaixo seria
-                        enviado para o e-mail informado — aqui ele é exibido diretamente na tela.
-                    </div>
-                    <div class="form-group">
-                        <label>Código de recuperação</label>
-                        <input type="text" id="tokenGerado" readonly style="font-family:monospace;font-size:12px">
-                    </div>
-                    <a href="#" id="irRedefinir" class="btn btn-primary btn-full">Ir para redefinição de senha</a>
+                    <div class="alert alert-info" id="resultado-msg"></div>
+                    <a href="redefinir_senha.html" class="btn btn-primary btn-full">Já tenho o código</a>
                 </div>
 
                 <p class="auth-footer-text">
@@ -63,14 +56,14 @@
                     <span class="step-num">1</span>
                     <div>
                         <strong>Informe seu e-mail</strong>
-                        <p>Verificamos se existe uma conta cadastrada com esse e-mail.</p>
+                        <p>Por segurança, a resposta é a mesma exista ou não uma conta com esse e-mail.</p>
                     </div>
                 </li>
                 <li>
                     <span class="step-num">2</span>
                     <div>
                         <strong>Receba o código</strong>
-                        <p>Em produção, o código chegaria por e-mail. Neste MVP, ele aparece na tela.</p>
+                        <p>Em produção, o código chegaria por e-mail. Neste projeto o e-mail é simulado e aparece no terminal do backend.</p>
                     </div>
                 </li>
                 <li>
@@ -96,12 +89,10 @@
         try {
             const email = document.getElementById('email').value;
             const data = await Api.post('/api/auth/recuperar-senha', { email });
-            document.getElementById('tokenGerado').value = data.token;
+            document.getElementById('resultado-msg').textContent = data.mensagem;
             document.getElementById('resultado-box').style.display = 'block';
-            document.getElementById('irRedefinir').href = `redefinir_senha.html?token=${encodeURIComponent(data.token)}`;
-            showFlash(data.mensagem || 'Código gerado.', 'success');
         } catch (err) {
-            alertBox.innerHTML = `<div class="alert alert-warning">${err.message}</div>`;
+            alertBox.innerHTML = `<div class="alert alert-warning">${esc(err.message)}</div>`;
         } finally {
             submitBtn.disabled = false;
         }

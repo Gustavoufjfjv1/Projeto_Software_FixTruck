@@ -58,7 +58,10 @@ class OcorrenciaController:
             'veiculo': request.args.get('veiculo', ''),
             'status': request.args.get('status', ''),
         }
-        return jsonify(ListarOcorrenciasService().executar(g.empresa_id, filtros))
+        try:
+            return jsonify(ListarOcorrenciasService().executar(g.empresa_id, filtros))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
 
     def form_data(self):
         return jsonify(ObterDadosFormularioOcorrenciaService().executar(g.empresa_id))
