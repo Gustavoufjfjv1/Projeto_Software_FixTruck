@@ -24,6 +24,12 @@ from services.favoritar_oficina_service import FavoritarOficinaService
 from services.gerar_relatorio_service import GerarRelatorioService
 from services.obter_perfil_service import ObterPerfilService
 from services.atualizar_perfil_service import AtualizarPerfilService
+from services.cadastrar_oficina_service import CadastrarOficinaService
+from services.atualizar_oficina_service import (
+    AtualizarOficinaService,
+    AlterarStatusOficinaService,
+    ListarMinhasOficinasService,
+)
 
 __all__ = [
     'ServiceError',
@@ -52,4 +58,8 @@ __all__ = [
     'GerarRelatorioService',
     'ObterPerfilService',
     'AtualizarPerfilService',
+    'CadastrarOficinaService',
+    'AtualizarOficinaService',
+    'AlterarStatusOficinaService',
+    'ListarMinhasOficinasService',
 ]

@@ -9,7 +9,7 @@ class Empresa(ModeloBase):
     nome = db.Column(db.String, nullable=False)
     email = db.Column(db.String, unique=True, nullable=False)
     senha = db.Column(db.String, nullable=False)
-    qtd_caminhoes = db.Column(db.Integer, default=0)
+    qtd_caminhoes = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     criado_em = db.Column(db.DateTime, server_default=db.func.current_timestamp())
 
     def to_dict_publico(self):
@@ -18,4 +18,5 @@ class Empresa(ModeloBase):
             'nome': self.nome,
             'email': self.email,
             'qtd_caminhoes': self.qtd_caminhoes,
+            'criado_em': self.criado_em.strftime('%Y-%m-%d %H:%M:%S') if self.criado_em else None,
         }

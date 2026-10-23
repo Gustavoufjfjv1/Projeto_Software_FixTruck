@@ -4,18 +4,21 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, jsonify, g, request, send_from_directory
-from database import db, init_db, DATABASE_URI
+from database import db, init_db, DATABASE_PATH
 from controllers import registrar_blueprints
 
 
-def create_app():
+def create_app(config=None):
     app = Flask(
         __name__,
         static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend'),
         static_url_path='',
     )
     app.secret_key = os.environ.get('FIXTRUCK_SECRET', 'fixtruck-secret-2024')
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
+    app.config['DATABASE_PATH'] = DATABASE_PATH
+    if config:
+        app.config.update(config)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{app.config['DATABASE_PATH']}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
@@ -57,5 +60,6 @@ app = create_app()
 
 if __name__ == '__main__':
     with app.app_context():
-        init_db()
+        resumo = init_db()
+        print(f"Banco pronto em {resumo['caminho']} — {resumo['oficinas_ativas']} oficinas ativas.")
     app.run(debug=True, port=5000)

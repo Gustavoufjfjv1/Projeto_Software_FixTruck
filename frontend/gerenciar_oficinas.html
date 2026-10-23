@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Oficinas — FixTruck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .horarios-table td { padding: 6px 8px; }
+        .horarios-table input[type="time"] { padding: 6px 8px; }
+        .check-grid { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+    </style>
+</head>
+<body>
+<div class="page-header">
+    <div>
+        <h1>Cadastro de Oficinas</h1>
+        <p id="sub-base">Amplie a base de oficinas usada na busca por compatibilidade</p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:24px">
+    <div class="card-header">
+        <span class="card-title" id="form-titulo">Nova oficina</span>
+        <button type="button" class="btn btn-outline btn-sm" id="btnCancelarEdicao" style="display:none">Cancelar edição</button>
+    </div>
+    <div id="form-erros"></div>
+    <form id="oficinaForm" novalidate>
+        <input type="hidden" id="oficina_id">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nome">Nome *</label>
+                <input type="text" id="nome" required minlength="3" maxlength="100" placeholder="Ex: Mecânica Diesel Estrada">
+            </div>
+            <div class="form-group">
+                <label for="telefone">Telefone *</label>
+                <input type="text" id="telefone" required inputmode="tel" maxlength="15" placeholder="(00) 00000-0000">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="endereco">Endereço *</label>
+            <input type="text" id="endereco" required minlength="5" maxlength="160" placeholder="Ex: BR-040, Km 773 - Bairro">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cidade">Cidade *</label>
+                <input type="text" id="cidade" required minlength="2" maxlength="80" placeholder="Ex: Juiz de Fora">
+            </div>
+            <div class="form-group">
+                <label for="uf">UF *</label>
+                <select id="uf" required></select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="lat">Latitude *</label>
+                <input type="number" id="lat" required step="any" min="-90" max="90" placeholder="-21.7609">
+            </div>
+            <div class="form-group">
+                <label for="lon">Longitude *</label>
+                <input type="number" id="lon" required step="any" min="-180" max="180" placeholder="-43.3500">
+            </div>
+        </div>
+        <div style="margin:-6px 0 16px">
+            <button type="button" class="btn btn-outline btn-sm" id="btnGeocodificar">Buscar coordenadas pelo endereço</button>
+            <span id="geoStatus" style="font-size:12px;color:var(--gray-400);margin-left:8px"></span>
+        </div>
+
+        <div class="form-group">
+            <label>Tipos de problema atendidos *</label>
+            <div class="check-grid" id="especialidades"></div>
+        </div>
+        <div class="form-group">
+            <label>Tipos de veículo atendidos *</label>
+            <div class="check-grid" id="tipos_veiculo"></div>
+        </div>
+        <div class="form-group">
+            <label class="checkbox-label"><input type="checkbox" id="tem_guincho"> Possui guincho (obrigatório para atender pane total)</label>
+            <label class="checkbox-label"><input type="checkbox" id="aberta_24h"> Funciona 24 horas, todos os dias</label>
+        </div>
+
+        <div class="form-group" id="horarios-box">
+            <label>Horário de funcionamento por dia *</label>
+            <div class="table-wrap">
+                <table class="horarios-table">
+                    <thead><tr><th>Dia</th><th>Aberta</th><th>Abre</th><th>Fecha</th></tr></thead>
+                    <tbody id="horarios-body"></tbody>
+                </table>
+            </div>
+            <p style="font-size:12px;color:var(--gray-400);margin-top:6px">
+                Se o fechamento for menor que a abertura (ex.: 22:00 às 06:00), o horário atravessa a meia-noite.
+            </p>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btnSalvar">Cadastrar oficina</button>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header"><span class="card-title">Oficinas cadastradas pela sua empresa</span></div>
+    <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">
+        As oficinas da base inicial (seed) são somente leitura. Oficinas desativadas deixam de aparecer na busca.
+    </p>
+    <div id="lista-container"></div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/masks.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/geo.js"></script>
+<script>
+if (!Api.requireAuth()) throw new Error('auth');
+renderLayout('gerenciar_oficinas');
+Masks.bind(document.getElementById('telefone'), 'telefone');
+
+const PADRAO_HORARIOS = {
+    seg: '08:00-18:00', ter: '08:00-18:00', qua: '08:00-18:00', qui: '08:00-18:00',
+    sex: '08:00-18:00', sab: '08:00-12:00', dom: null,
+};
+let opcoes = null;
+let oficinasCache = [];
+
+function checkboxes(containerId, lista, marcados) {
+    document.getElementById(containerId).innerHTML = lista.map(o => `
+        <label class="checkbox-label" style="margin:0">
+            <input type="checkbox" value="${esc(o.valor)}" ${marcados.includes(o.valor) ? 'checked' : ''}> ${esc(o.rotulo)}
+        </label>`).join('');
+}
+
+function marcados(containerId) {
+    return [...document.querySelectorAll(`#${containerId} input:checked`)].map(i => i.value);
+}
+
+function renderHorarios(horarios) {
+    document.getElementById('horarios-body').innerHTML = opcoes.dias_semana.map(d => {
+        const valor = horarios[d.valor];
+        const [abre, fecha] = valor ? valor.split('-') : ['08:00', '18:00'];
+        return `<tr>
+            <td>${esc(d.rotulo)}</td>
+            <td><input type="checkbox" data-dia="${d.valor}" class="dia-aberto" ${valor ? 'checked' : ''}></td>
+            <td><input type="time" data-abre="${d.valor}" value="${abre}" ${valor ? '' : 'disabled'}></td>
+            <td><input type="time" data-fecha="${d.valor}" value="${fecha === '24:00' ? '23:59' : fecha}" ${valor ? '' : 'disabled'}></td>
+        </tr>`;
+    }).join('');
+    document.querySelectorAll('.dia-aberto').forEach(chk => {
+        chk.addEventListener('change', () => {
+            document.querySelector(`[data-abre="${chk.dataset.dia}"]`).disabled = !chk.checked;
+            document.querySelector(`[data-fecha="${chk.dataset.dia}"]`).disabled = !chk.checked;
+        });
+    });
+}
+
+function lerHorarios() {
+    const horarios = {};
+    opcoes.dias_semana.forEach(d => {
+        const aberto = document.querySelector(`[data-dia="${d.valor}"]`).checked;
+        const abre = document.querySelector(`[data-abre="${d.valor}"]`).value;
+        const fecha = document.querySelector(`[data-fecha="${d.valor}"]`).value;
+        horarios[d.valor] = aberto ? `${abre}-${fecha}` : null;
+    });
+    return horarios;
+}
+
+function atualizarVisibilidadeHorarios() {
+    document.getElementById('horarios-box').style.display =
+        document.getElementById('aberta_24h').checked ? 'none' : '';
+}
+document.getElementById('aberta_24h').addEventListener('change', atualizarVisibilidadeHorarios);
+
+function preencherFormulario(of) {
+    document.getElementById('oficina_id').value = of ? of.id : '';
+    document.getElementById('nome').value = of ? of.nome : '';
+    document.getElementById('telefone').value = of ? (of.telefone || '') : '';
+    document.getElementById('endereco').value = of ? (of.endereco || '') : '';
+    document.getElementById('cidade').value = of ? (of.cidade || '') : '';
+    document.getElementById('uf').value = of ? (of.uf || '') : '';
+    document.getElementById('lat').value = of ? of.lat : '';
+    document.getElementById('lon').value = of ? of.lon : '';
+    document.getElementById('tem_guincho').checked = of ? of.tem_guincho : false;
+    document.getElementById('aberta_24h').checked = of ? of.aberta_24h : false;
+    checkboxes('especialidades', opcoes.especialidades_oficina, of ? of.especialidades.split(',') : []);
+    checkboxes('tipos_veiculo', opcoes.tipos_veiculo, of ? of.tipos_veiculo.split(',') : []);
+    renderHorarios(of && !of.aberta_24h && Object.values(of.horarios || {}).some(Boolean) ? of.horarios : PADRAO_HORARIOS);
+    atualizarVisibilidadeHorarios();
+    document.getElementById('form-titulo').textContent = of ? `Editar oficina #${of.id}` : 'Nova oficina';
+    document.getElementById('btnSalvar').textContent = of ? 'Salvar alterações' : 'Cadastrar oficina';
+    document.getElementById('btnCancelarEdicao').style.display = of ? '' : 'none';
+    document.getElementById('form-erros').innerHTML = '';
+}
+
+document.getElementById('btnCancelarEdicao').addEventListener('click', () => preencherFormulario(null));
+
+function validarCliente(corpo) {
+    const erros = [];
+    const form = document.getElementById('oficinaForm');
+    form.querySelectorAll('input[required], select[required]').forEach(el => {
+        if (!el.checkValidity()) {
+            const label = form.querySelector(`label[for="${el.id}"]`);
+            erros.push(`${label ? label.textContent.replace('*', '').trim() : el.id}: ${el.validationMessage}`);
+        }
+    });
+    if (Masks.onlyDigits(corpo.telefone).length < 10) erros.push('Telefone: informe DDD + número.');
+    if (!corpo.especialidades.length) erros.push('Selecione ao menos um tipo de problema atendido.');
+    if (!corpo.tipos_veiculo.length) erros.push('Selecione ao menos um tipo de veículo atendido.');
+    if (!corpo.aberta_24h && !Object.values(corpo.horarios).some(Boolean)) {
+        erros.push('Informe o horário de pelo menos um dia ou marque 24 horas.');
+    }
+    return erros;
+}
+
+function mostrarErros(erros) {
+    document.getElementById('form-erros').innerHTML = erros.length
+        ? `<div class="alert alert-warning">${erros.map(esc).join('<br>')}</div>` : '';
+}
+
+document.getElementById('oficinaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const corpo = {
+        nome: document.getElementById('nome').value,
+        telefone: document.getElementById('telefone').value,
+        endereco: document.getElementById('endereco').value,
+        cidade: document.getElementById('cidade').value,
+        uf: document.getElementById('uf').value,
+        lat: document.getElementById('lat').value,
+        lon: document.getElementById('lon').value,
+        especialidades: marcados('especialidades'),
+        tipos_veiculo: marcados('tipos_veiculo'),
+        tem_guincho: document.getElementById('tem_guincho').checked,
+        aberta_24h: document.getElementById('aberta_24h').checked,
+        horarios: lerHorarios(),
+    };
+    const erros = validarCliente(corpo);
+    mostrarErros(erros);
+    if (erros.length) return;
+    const id = document.getElementById('oficina_id').value;
+    try {
+        const res = id ? await Api.put(`/api/oficinas/${id}`, corpo) : await Api.post('/api/oficinas', corpo);
+        showFlash(res.mensagem, 'success');
+        preencherFormulario(null);
+        load();
+    } catch (err) {
+        mostrarErros([err.message]);
+    }
+});
+
+document.getElementById('btnGeocodificar').addEventListener('click', async () => {
+    const status = document.getElementById('geoStatus');
+    const endereco = document.getElementById('endereco').value.trim();
+    const cidade = document.getElementById('cidade').value.trim();
+    const uf = document.getElementById('uf').value;
+    if (!endereco && !cidade) {
+        status.textContent = 'Preencha endereço e cidade primeiro.';
+        return;
+    }
+    status.textContent = 'Buscando...';
+    const coords = await Geo.coordenadasPorEndereco(endereco, [cidade, uf].filter(Boolean).join('/'));
+    if (coords) {
+        document.getElementById('lat').value = Number(coords.lat).toFixed(6);
+        document.getElementById('lon').value = Number(coords.lon).toFixed(6);
+        status.textContent = 'Coordenadas preenchidas — confira no mapa da oficina após salvar.';
+    } else {
+        status.textContent = 'Endereço não localizado. Informe latitude e longitude manualmente.';
+    }
+});
+
+async function alterarStatus(id, ativa) {
+    try {
+        const res = await Api.patch(`/api/oficinas/${id}/ativa`, { ativa });
+        showFlash(res.mensagem, 'success');
+        load();
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+}
+
+async function load() {
+    try {
+        const data = await Api.get('/api/oficinas/minhas');
+        oficinasCache = data.oficinas || [];
+        document.getElementById('sub-base').textContent =
+            `Amplie a base usada na busca por compatibilidade — ${data.total_base_ativa} oficinas ativas no sistema`;
+        const container = document.getElementById('lista-container');
+        if (!oficinasCache.length) {
+            container.innerHTML = `<div class="empty-state">
+                <div class="empty-icon">${Icons.wrench(48)}</div>
+                <h3>Nenhuma oficina cadastrada pela sua empresa</h3>
+                <p>Use o formulário acima para adicionar oficinas à base.</p></div>`;
+            return;
+        }
+        container.innerHTML = `<div class="table-wrap"><table>
+            <thead><tr><th>Nome</th><th>Cidade</th><th>Atende</th><th>Horário</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody>${oficinasCache.map(of => `<tr>
+                <td style="font-weight:600"><a href="detalhe_oficina.html?id=${of.id}">${esc(of.nome)}</a></td>
+                <td>${esc(of.cidade || '')}/${esc(of.uf || '')}</td>
+                <td style="font-size:12px">${esc(of.especialidades)}<br><span style="color:var(--gray-400)">${esc(of.tipos_veiculo)}</span>
+                    ${of.tem_guincho ? '<br><span class="guincho-badge">Guincho</span>' : ''}</td>
+                <td style="font-size:12px">${esc(of.horario_resumo)}</td>
+                <td>${of.ativa ? '<span class="badge badge-green">Ativa</span>' : '<span class="badge badge-gray">Inativa</span>'}</td>
+                <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button type="button" class="btn btn-outline btn-sm" data-editar="${of.id}">Editar</button>
+                    <button type="button" class="btn btn-outline btn-sm" data-status="${of.id}" data-ativa="${of.ativa ? '0' : '1'}">${of.ativa ? 'Desativar' : 'Ativar'}</button>
+                </div></td>
+            </tr>`).join('')}</tbody></table></div>`;
+        container.querySelectorAll('[data-editar]').forEach(btn => btn.addEventListener('click', () => {
+            preencherFormulario(oficinasCache.find(o => String(o.id) === btn.dataset.editar));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }));
+        container.querySelectorAll('[data-status]').forEach(btn => btn.addEventListener('click', () =>
+            alterarStatus(btn.dataset.status, btn.dataset.ativa === '1')));
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+}
+
+(async () => {
+    try {
+        opcoes = await carregarOpcoes();
+        document.getElementById('uf').innerHTML = '<option value="">UF</option>' +
+            opcoes.ufs.map(u => `<option value="${u}">${u}</option>`).join('');
+        preencherFormulario(null);
+        load();
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
+})();
+</script>
+</body>
+</html>
