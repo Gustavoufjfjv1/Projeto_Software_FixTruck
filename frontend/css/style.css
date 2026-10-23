@@ -771,6 +771,7 @@ img, svg, video {
 .oficina-card:hover { border-color: var(--neon); box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .oficina-card-recomendada { border-color: var(--green); box-shadow: 0 0 0 1px var(--green-muted); }
 .oficina-card-fechada { opacity: .72; }
+.oficina-card-alternativa { border-style: dashed; border-color: var(--orange); opacity: .85; }
 .recomendada-ribbon {
     position: absolute;
     top: -1px;

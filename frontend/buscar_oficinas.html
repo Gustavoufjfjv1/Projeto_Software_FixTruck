@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oficinas Próximas — FixTruck</title>
+    <title>Oficinas Compatíveis — FixTruck</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
@@ -16,6 +16,7 @@
 <script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/busca_oficinas.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('ocorrencias');
@@ -24,17 +25,6 @@ const id = qs('id');
 if (!id) {
     window.location.href = 'ocorrencias.html';
     throw new Error('id');
-}
-
-const raioParam = qs('raio') || '';
-
-function tagsEsp(especialidades, tipoProblema) {
-    return (especialidades || '').split(',').map(esp => {
-        const t = esp.trim();
-        if (!t) return '';
-        const highlight = tipoProblema && t.toLowerCase() === String(tipoProblema).toLowerCase();
-        return `<span class="oficina-tag" style="${highlight ? 'background:var(--green);color:white' : ''}">${t}</span>`;
-    }).join('');
 }
 
 async function vincular(oficinaId) {
@@ -57,200 +47,38 @@ async function favoritar(oficinaId) {
     }
 }
 
-function renderCard(of, oc) {
-    const fechada = !of.aberta_agora;
-    return `
-    <div class="oficina-card ${of.recomendada ? 'oficina-card-recomendada' : ''} ${fechada ? 'oficina-card-fechada' : ''}">
-        ${of.recomendada ? `<div class="recomendada-ribbon">${Icons.checkSimple(14)} Recomendada</div>` : ''}
-        ${of.tem_guincho ? `<div style="position:absolute;top:14px;right:14px"><span class="guincho-badge">Guincho</span></div>` : ''}
-        <div class="oficina-card-header">
-            <div>
-                <div class="oficina-name">${of.nome}</div>
-                <div class="oficina-sub">${of.endereco || ''}</div>
-            </div>
-        </div>
-        <div style="display:flex;gap:10px;margin:8px 0;font-size:12px;font-weight:600">
-            ${of.atende_tipo ? `<span style="color:var(--green-dark)">${Icons.checkSimple(12)} Atende o problema</span>` : ''}
-            ${of.atende_veiculo ? `<span style="color:var(--green-dark)">${Icons.checkSimple(12)} Atende o veículo</span>` : ''}
-        </div>
-        <div class="oficina-tags">${tagsEsp(of.especialidades, oc.tipo_problema)}</div>
-        <div class="oficina-meta">
-            ${of.distancia != null ? `<span>${of.distancia} km</span>` : ''}
-            <span>${of.aberta_agora
-                ? '<span style="color:var(--green);font-weight:600">● Aberta agora</span>'
-                : '<span style="color:var(--red)">● Fechada agora</span>'}</span>
-            <span>${of.tipos_veiculo || ''}</span>
-        </div>
-        <div style="margin-top:12px;font-size:13px;color:var(--gray-600)">
-            Horário: ${esc(of.horario_resumo)}
-            ${of.telefone ? ` &nbsp;|&nbsp; ${of.telefone}` : ''}
-        </div>
-        <div style="display:flex;gap:10px;margin-top:16px;align-items:center;flex-wrap:wrap">
-            <button type="button" class="btn btn-primary btn-sm" data-vincular="${of.id}" data-aberta="${of.aberta_agora ? '1' : '0'}">Selecionar oficina</button>
-            ${of.telefone ? `<a href="tel:${of.telefone}" class="btn btn-outline btn-sm">${Icons.phone(14)} Ligar</a>` : ''}
-            <a href="detalhe_oficina.html?id=${of.id}" class="btn btn-outline btn-sm">Ver detalhes</a>
-            <button type="button" class="fav-btn ${of.favoritada ? 'active' : ''}" data-fav="${of.id}" title="Favoritar" style="margin-left:auto">
-                ${of.favoritada ? Icons.star(18, true) : Icons.star(18, false)}
-            </button>
-        </div>
-    </div>`;
-}
-
-function initMap(oc, oficinas) {
-    const container = document.getElementById('mapa-busca');
-    if (!container || typeof L === 'undefined') return;
-
-    const map = L.map('mapa-busca', { scrollWheelZoom: false });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; colaboradores do OpenStreetMap',
-        maxZoom: 18,
-    }).addTo(map);
-
-    const bounds = [];
-
-    if (oc.lat && oc.lon) {
-        const truckIcon = L.divIcon({
-            className: 'map-marker-icon map-marker-truck',
-            html: '🚚',
-            iconSize: [30, 30],
-        });
-        L.marker([Number(oc.lat), Number(oc.lon)], { icon: truckIcon })
-            .addTo(map)
-            .bindPopup('<strong>Local da ocorrência</strong>');
-        bounds.push([Number(oc.lat), Number(oc.lon)]);
-    }
-
-    oficinas.forEach(of => {
-        if (!of.lat || !of.lon) return;
-        const cor = of.tem_guincho ? '#00a854' : (of.aberta_agora ? '#2563eb' : '#9ca3af');
-        const icon = L.divIcon({
-            className: 'map-marker-icon',
-            html: `<div style="background:${cor}">🔧</div>`,
-            iconSize: [28, 28],
-        });
-        const popup = `
-            <strong>${of.nome}</strong><br>
-            ${of.distancia != null ? of.distancia + ' km &middot; ' : ''}${of.aberta_agora ? 'Aberta agora' : 'Fechada agora'}
-            ${of.tem_guincho ? '<br>🛻 Guincho disponível' : ''}
-            <br><a href="detalhe_oficina.html?id=${of.id}">Ver detalhes</a>
-        `;
-        L.marker([Number(of.lat), Number(of.lon)], { icon }).addTo(map).bindPopup(popup);
-        bounds.push([Number(of.lat), Number(of.lon)]);
-    });
-
-    if (bounds.length) {
-        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
-    }
-}
-
 async function load() {
+    const params = new URLSearchParams();
+    if (qs('raio')) params.set('raio', qs('raio'));
+    if (qs('janela')) params.set('janela', qs('janela'));
+    const q = params.toString();
+    const root = document.getElementById('page-root');
     try {
-        const q = raioParam ? `?raio=${encodeURIComponent(raioParam)}` : '';
-        const data = await Api.get(`/api/ocorrencias/${id}/buscar-oficinas${q}`);
-        const oc = data.ocorrencia;
-        const oficinas = data.oficinas || [];
-        const raio = data.raio;
-
-        const temCoordenadas = oficinas.some(of => of.lat && of.lon);
-        const mapaHtml = temCoordenadas
-            ? `<div id="mapa-busca" class="map-busca-container"></div>`
-            : '';
-
-        const listHtml = oficinas.length
-            ? `<div class="oficinas-grid">${oficinas.map(of => renderCard(of, oc)).join('')}</div>`
-            : `<div class="empty-state">
-                <div class="empty-icon">${Icons.wrench(48)}</div>
-                <h3>Nenhuma oficina no raio selecionado</h3>
-                <p>Aumente o raio de distância em quilômetros ou remova o filtro.</p>
-               </div>`;
-
-        const root = document.getElementById('page-root');
-        root.innerHTML = `
-            <div class="page-header">
-                <div>
-                    <h1>Oficinas Próximas</h1>
-                    <p>Ocorrência #${oc.id} — ${oc.tipo_veiculo || ''} / ${oc.tipo_problema || ''}
-                       ${oc.pane_total ? '<span class="badge badge-red" style="margin-left:8px">PANE TOTAL</span>' : ''}
-                    </p>
-                </div>
-                <a href="detalhe_ocorrencia.html?id=${oc.id}" class="btn btn-outline">${Icons.arrowLeft(16)} Ocorrência</a>
-            </div>
-
-            ${oc.pane_total ? `
-            <div class="alert alert-warning">
-                <strong>Pane total detectada.</strong> Resultados priorizados por disponibilidade de guincho,
-                depois por compatibilidade com o problema/veículo, depois por horário e distância.
-            </div>` : ''}
-
-            ${!oc.lat ? `
-            <div class="alert alert-info">
-                Localização não capturada — mostrando todas as oficinas. Para filtrar por raio e ver o mapa
-                centralizado no caminhão, registre a localização GPS na ocorrência.
-            </div>` : ''}
-
-            <div class="card" style="margin-bottom:20px;padding:16px 20px">
-                <div class="filters-bar" style="margin-bottom:0">
-                    <label style="font-size:13px;font-weight:600;color:var(--gray-700)">Raio de distância (km)</label>
-                    <select name="raio" id="raio" class="filter-select">
-                        <option value="">Sem limite</option>
-                        <option value="5">Até 5 km</option>
-                        <option value="10">Até 10 km</option>
-                        <option value="20">Até 20 km</option>
-                        <option value="50">Até 50 km</option>
-                        <option value="100">Até 100 km</option>
-                    </select>
-                    <span style="font-size:13px;color:var(--gray-400)">${oficinas.length} oficina(s) encontrada(s)</span>
-                    ${raio ? `<a href="buscar_oficinas.html?id=${id}" class="btn btn-outline btn-sm">${Icons.x(16)} Limpar raio</a>` : ''}
-                </div>
-            </div>
-
-            ${mapaHtml}
-
-            ${listHtml}
-
-            <div style="margin-top:24px;text-align:center">
-                <a href="encerrar_ocorrencia.html?id=${id}" class="btn btn-outline">
-                    Encerrar ocorrência (status resolvido)
-                </a>
-            </div>
-        `;
-
-        const raioSelect = document.getElementById('raio');
-        if (raio != null && raio !== '') raioSelect.value = String(Math.trunc(Number(raio)));
-        else if (raioParam) raioSelect.value = raioParam;
-
-        raioSelect.addEventListener('change', () => {
-            const r = raioSelect.value;
-            window.location.href = `buscar_oficinas.html?id=${id}` + (r ? `&raio=${r}` : '');
+        const data = await Api.get(`/api/ocorrencias/${id}/buscar-oficinas${q ? '?' + q : ''}`);
+        BuscaOficinas.render(root, data, {
+            podeSelecionar: data.ocorrencia.status !== 'resolvido',
+            podeFavoritar: true,
+            linkDetalhe: true,
+            voltarHref: `detalhe_ocorrencia.html?id=${id}`,
+            voltarTexto: 'Ocorrência',
+            onVincular: vincular,
+            onFavoritar: favoritar,
+            onFiltro: ({ raio, janela }) => {
+                const p = new URLSearchParams({ id });
+                if (raio) p.set('raio', raio);
+                if (janela && janela !== '0') p.set('janela', janela);
+                window.location.href = `buscar_oficinas.html?${p.toString()}`;
+            },
+            rodape: `<div style="margin-top:24px;text-align:center">
+                <a href="encerrar_ocorrencia.html?id=${id}" class="btn btn-outline">Encerrar ocorrência (status resolvido)</a></div>`,
         });
-
-        if (temCoordenadas) {
-            initMap(oc, oficinas);
-        }
-
-        document.querySelectorAll('[data-vincular]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (btn.dataset.aberta === '0') {
-                    const confirmar = window.confirm(
-                        'Esta oficina está fechada agora. Ainda assim deseja selecioná-la para esta ocorrência?'
-                    );
-                    if (!confirmar) return;
-                }
-                vincular(btn.dataset.vincular);
-            });
-        });
-        document.querySelectorAll('[data-fav]').forEach(btn => {
-            btn.addEventListener('click', () => favoritar(btn.dataset.fav));
-        });
-        hydrateIcons(root);
     } catch (err) {
         showFlash(err.message, 'error');
-        document.getElementById('page-root').innerHTML = `
+        root.innerHTML = `
             <div class="page-header">
-                <div><h1>Oficinas Próximas</h1></div>
+                <div><h1>Oficinas compatíveis</h1></div>
                 <a href="${voltarPara('ocorrencias.html')}" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
-            </div>
-        `;
+            </div>`;
     }
 }
 
