@@ -864,6 +864,7 @@ img, svg, video {
     align-items: flex-start;
     text-align: left;
 }
+.alert.alert-texto { display: block; }
 .alert-warning { background: var(--orange-light); color: var(--orange); border: 1px solid #fed7aa; }
 .alert-info { background: var(--green-faint); color: var(--green-dark); border: 1px solid var(--green-muted); }
 .form-page-center {

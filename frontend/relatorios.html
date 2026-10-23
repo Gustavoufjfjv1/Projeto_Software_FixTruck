@@ -14,12 +14,7 @@
         <h1>Relatórios</h1>
         <p>Indicadores de desempenho operacional</p>
     </div>
-    <select name="periodo" id="filtro_periodo" class="filter-select">
-        <option value="">Todo período</option>
-        <option value="7d">Últimos 7 dias</option>
-        <option value="30d">Últimos 30 dias</option>
-        <option value="90d">Últimos 90 dias</option>
-    </select>
+    <div id="filtro-datas" class="filters-bar" style="margin-bottom:0"></div>
 </div>
 
 <div id="stats-grid" class="stats-grid" style="margin-bottom:28px"></div>
@@ -28,15 +23,15 @@
 <script src="js/api.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
+<script src="js/filtro_datas.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('relatorios');
 
-const periodo = qs('periodo') || '';
-document.getElementById('filtro_periodo').value = periodo;
-document.getElementById('filtro_periodo').addEventListener('change', (e) => {
-    const p = e.target.value;
-    window.location.href = 'relatorios.html' + (p ? `?periodo=${p}` : '');
+document.getElementById('filtro-datas').innerHTML = FiltroDatas.html();
+FiltroDatas.ligar((valores) => {
+    const q = new URLSearchParams(valores).toString();
+    window.location.href = 'relatorios.html' + (q ? '?' + q : '');
 });
 
 function barRows(rows, labelKey, blue) {
@@ -52,7 +47,7 @@ function barRows(rows, labelKey, blue) {
             const pct = Math.trunc((Number(row.c) / max) * 100);
             return `
             <div class="bar-row">
-                <div class="bar-label" style="text-transform:capitalize">${row[labelKey] || '—'}</div>
+                <div class="bar-label" style="text-transform:capitalize">${esc(row[labelKey] || '—')}</div>
                 <div class="bar-track">
                     <div class="bar-fill" style="width:${pct}%;${blue ? 'background:var(--blue)' : ''}"></div>
                 </div>
@@ -64,8 +59,10 @@ function barRows(rows, labelKey, blue) {
 
 (async () => {
     try {
-        const q = periodo ? `?periodo=${encodeURIComponent(periodo)}` : '';
-        const data = await Api.get('/api/relatorios' + q);
+        const params = new URLSearchParams();
+        Object.entries(FiltroDatas.atuais()).forEach(([k, val]) => { if (val) params.set(k, val); });
+        const q = params.toString();
+        const data = await Api.get('/api/relatorios' + (q ? '?' + q : ''));
         const total = data.total || 0;
         const abertas = data.abertas || 0;
         const emAtend = data.em_atendimento || 0;

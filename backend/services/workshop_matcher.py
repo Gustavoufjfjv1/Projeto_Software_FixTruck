@@ -129,7 +129,7 @@ class WorkshopMatcher:
         return None
 
     @staticmethod
-    def mensagem(motivo, criterios):
+    def detalhe(motivo, criterios):
         if motivo is None:
             return None
         textos = {
@@ -144,7 +144,13 @@ class WorkshopMatcher:
             'raio': f'Nenhuma oficina compatível dentro do raio de {criterios.raio_km:g} km.'
                     if criterios.raio_km is not None else 'Nenhuma oficina compatível no raio informado.',
         }
-        return 'Nenhuma oficina compatível encontrada. ' + textos[motivo]
+        return textos[motivo]
+
+    @classmethod
+    def mensagem(cls, motivo, criterios):
+        if motivo is None:
+            return None
+        return 'Nenhuma oficina compatível encontrada. ' + cls.detalhe(motivo, criterios)
 
     def recomendar(self, oficinas, criterios):
         avaliadas = [self.avaliar(of, criterios) for of in oficinas]
@@ -164,5 +170,6 @@ class WorkshopMatcher:
             'alternativas': alternativas,
             'motivo': motivo,
             'mensagem': self.mensagem(motivo, criterios),
+            'detalhe': self.detalhe(motivo, criterios),
             'total_avaliadas': len(avaliadas),
         }

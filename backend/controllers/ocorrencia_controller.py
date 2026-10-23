@@ -54,6 +54,8 @@ class OcorrenciaController:
     def listar(self):
         filtros = {
             'periodo': request.args.get('periodo', ''),
+            'data_inicio': request.args.get('data_inicio', ''),
+            'data_fim': request.args.get('data_fim', ''),
             'tipo': request.args.get('tipo', ''),
             'veiculo': request.args.get('veiculo', ''),
             'status': request.args.get('status', ''),

@@ -25,7 +25,7 @@ const BuscaOficinas = {
 
   card(of, oc, opts, alternativa) {
     const motivos = alternativa
-      ? `<div class="alert alert-warning" style="margin:10px 0 0;padding:8px 12px;font-size:12px">
+      ? `<div class="alert alert-texto alert-warning" style="margin:10px 0 0;padding:8px 12px;font-size:12px">
            <strong>Não compatível:</strong> ${(of.motivos_incompatibilidade || []).map(esc).join(' · ')}
          </div>`
       : '';
@@ -120,7 +120,7 @@ const BuscaOficinas = {
            <div class="empty-state" style="padding:24px">
              <div class="empty-icon">${Icons.wrench(48)}</div>
              <h3>Nenhuma oficina compatível encontrada</h3>
-             <p>${esc(data.mensagem || '')}</p>
+             <p>${esc(data.detalhe || data.mensagem || '')}</p>
              <p style="font-size:13px;color:var(--gray-500)">Tente aumentar o raio ou a janela de horário.</p>
            </div>
          </div>
@@ -140,12 +140,12 @@ const BuscaOficinas = {
         </div>
         <a href="${opts.voltarHref}" class="btn btn-outline">${Icons.arrowLeft(16)} ${esc(opts.voltarTexto || 'Voltar')}</a>
       </div>
-      <div class="alert alert-info">
+      <div class="alert alert-texto alert-info">
         Só aparecem na lista principal oficinas <strong>ativas</strong>, que atendem o <strong>problema</strong> e o
         <strong>veículo</strong>${oc.pane_total ? ', possuem <strong>guincho</strong> (pane total)' : ''},
         estão <strong>abertas</strong> (fuso de Brasília) e dentro do <strong>raio</strong>. Ordem: menor distância.
       </div>
-      ${data.sem_localizacao ? `<div class="alert alert-warning">
+      ${data.sem_localizacao ? `<div class="alert alert-texto alert-warning">
         Ocorrência sem localização — não é possível calcular distância nem filtrar por raio.
         Edite a ocorrência e informe o endereço ou o GPS.</div>` : ''}
       ${this.filtros(data, opts)}

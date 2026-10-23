@@ -1,16 +1,35 @@
+from datetime import date, timedelta
+
 from database import get_db
+from horarios import agora_sao_paulo
 from models import Ocorrencia
 from utils import row_to_dict, rows_to_list
 
+DIAS_PERIODO = {'7d': 7, '30d': 30, '90d': 90}
+_FORMATO = '%Y-%m-%d %H:%M:%S'
 
-def _sql_periodo(periodo, coluna='o.data_abertura'):
-    if periodo == '7d':
-        return f" AND {coluna} >= datetime('now', '-7 days')"
-    if periodo == '30d':
-        return f" AND {coluna} >= datetime('now', '-30 days')"
-    if periodo == '90d':
-        return f" AND {coluna} >= datetime('now', '-90 days')"
-    return ''
+
+def filtro_datas(filtros, coluna='o.data_abertura'):
+    """(sql, params) do período. Datas gravadas como texto no horário de São Paulo.
+
+    Intervalo personalizado (data_inicio/data_fim, YYYY-MM-DD) tem prioridade sobre o atalho 7d/30d/90d;
+    o dia final é incluído por inteiro (< dia seguinte 00:00).
+    """
+    filtros = filtros if isinstance(filtros, dict) else {'periodo': filtros or ''}
+    inicio, fim = filtros.get('data_inicio'), filtros.get('data_fim')
+    sql, params = '', []
+    if inicio or fim:
+        if inicio:
+            sql += f' AND {coluna} >= ?'
+            params.append(f'{inicio} 00:00:00')
+        if fim:
+            sql += f' AND {coluna} < ?'
+            params.append(f'{date.fromisoformat(fim) + timedelta(days=1)} 00:00:00')
+    elif filtros.get('periodo') in DIAS_PERIODO:
+        limite = agora_sao_paulo().replace(tzinfo=None) - timedelta(days=DIAS_PERIODO[filtros['periodo']])
+        sql += f' AND {coluna} >= ?'
+        params.append(limite.strftime(_FORMATO))
+    return sql, params
 
 
 # Ocorrências visíveis ao motorista: da própria empresa e (registradas por ele OU do veículo vinculado a ele).
@@ -66,7 +85,9 @@ class OcorrenciaRepository:
         elif status:
             query += ' AND o.status=?'
             params.append(status)
-        query += _sql_periodo(filtros.get('periodo', ''))
+        sql_datas, params_datas = filtro_datas(filtros)
+        query += sql_datas
+        params.extend(params_datas)
         query += ' ORDER BY o.data_abertura DESC'
         return rows_to_list(get_db().execute(query, params).fetchall())
 
@@ -102,14 +123,16 @@ class OcorrenciaRepository:
         ).fetchone()['c']
 
     @staticmethod
-    def contar_total(empresa_id, periodo=''):
-        sql = 'SELECT COUNT(*) as c FROM ocorrencias o WHERE o.empresa_id=?' + _sql_periodo(periodo)
-        return get_db().execute(sql, (empresa_id,)).fetchone()['c']
+    def contar_total(empresa_id, filtros=None):
+        sql_datas, params = filtro_datas(filtros)
+        sql = 'SELECT COUNT(*) as c FROM ocorrencias o WHERE o.empresa_id=?' + sql_datas
+        return get_db().execute(sql, (empresa_id, *params)).fetchone()['c']
 
     @staticmethod
-    def contar_por_status(empresa_id, status, periodo=''):
-        sql = 'SELECT COUNT(*) as c FROM ocorrencias o WHERE o.empresa_id=? AND o.status=?' + _sql_periodo(periodo)
-        return get_db().execute(sql, (empresa_id, status)).fetchone()['c']
+    def contar_por_status(empresa_id, status, filtros=None):
+        sql_datas, params = filtro_datas(filtros)
+        sql = 'SELECT COUNT(*) as c FROM ocorrencias o WHERE o.empresa_id=? AND o.status=?' + sql_datas
+        return get_db().execute(sql, (empresa_id, status, *params)).fetchone()['c']
 
     @staticmethod
     def contar_veiculos_atendidos(empresa_id):
@@ -120,20 +143,20 @@ class OcorrenciaRepository:
         ).fetchone()['c']
 
     @staticmethod
-    def tempo_medio_resolucao(empresa_id, periodo=''):
+    def tempo_medio_resolucao(empresa_id, filtros=None):
+        sql_datas, params = filtro_datas(filtros)
         sql = """SELECT AVG((julianday(data_encerramento) - julianday(data_abertura)) * 24 * 60) as avg
                  FROM ocorrencias o
                  WHERE o.empresa_id=? AND o.status='resolvido' AND o.data_encerramento IS NOT NULL"""
-        sql += _sql_periodo(periodo)
-        return get_db().execute(sql, (empresa_id,)).fetchone()['avg']
+        return get_db().execute(sql + sql_datas, (empresa_id, *params)).fetchone()['avg']
 
     @staticmethod
-    def tempo_medio_ate_oficina(empresa_id, periodo=''):
+    def tempo_medio_ate_oficina(empresa_id, filtros=None):
+        sql_datas, params = filtro_datas(filtros)
         sql = """SELECT AVG((julianday(data_vinculacao) - julianday(data_abertura)) * 24 * 60) as avg
                  FROM ocorrencias o
                  WHERE o.empresa_id=? AND o.data_vinculacao IS NOT NULL"""
-        sql += _sql_periodo(periodo)
-        return get_db().execute(sql, (empresa_id,)).fetchone()['avg']
+        return get_db().execute(sql + sql_datas, (empresa_id, *params)).fetchone()['avg']
 
     @staticmethod
     def problema_mais_comum(empresa_id):
@@ -168,10 +191,11 @@ class OcorrenciaRepository:
         return rows_to_list(rows)
 
     @staticmethod
-    def agregados_relatorio(empresa_id, periodo=''):
+    def agregados_relatorio(empresa_id, filtros=None):
         db = get_db()
-        where = 'WHERE o.empresa_id=?' + _sql_periodo(periodo)
-        params = (empresa_id,)
+        sql_datas, params_datas = filtro_datas(filtros)
+        where = 'WHERE o.empresa_id=?' + sql_datas
+        params = (empresa_id, *params_datas)
         por_tipo = db.execute(
             f'SELECT o.tipo_problema, COUNT(*) as c FROM ocorrencias o {where} GROUP BY o.tipo_problema',
             params,
@@ -185,7 +209,7 @@ class OcorrenciaRepository:
         por_mes = db.execute(
             f"""SELECT strftime('%m/%Y', o.data_abertura) as mes, COUNT(*) as c
                 FROM ocorrencias o {where}
-                GROUP BY mes ORDER BY o.data_abertura DESC LIMIT 6""",
+                GROUP BY mes ORDER BY MAX(o.data_abertura) DESC LIMIT 6""",
             params,
         ).fetchall()
         ranking_oficinas = db.execute(

@@ -247,7 +247,7 @@ function mostrarSenha(res) {
     showFlash(res.mensagem, 'success');
     if (!res.senha_temporaria) return;
     document.getElementById('senha-gerada').innerHTML = `
-        <div class="alert alert-info">
+        <div class="alert alert-texto alert-info">
             Acesso de <strong>${esc(res.email)}</strong> — senha provisória: <strong style="font-family:monospace;font-size:16px">${esc(res.senha_temporaria)}</strong><br>
             Anote e entregue ao motorista; ela não será exibida de novo. Ele deve trocá-la no primeiro login em <em>motorista_login.html</em>.
         </div>`;

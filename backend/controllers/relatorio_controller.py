@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, g, request
 from auth import login_required
-from services import GerarRelatorioService
+from services import GerarRelatorioService, ServiceError
 
 
 class RelatorioController:
@@ -11,8 +11,15 @@ class RelatorioController:
         self.bp.add_url_rule('', view_func=login_required(self.obter), methods=['GET'])
 
     def obter(self):
-        periodo = request.args.get('periodo', '')
-        return jsonify(GerarRelatorioService().executar(g.empresa_id, periodo))
+        filtros = {
+            'periodo': request.args.get('periodo', ''),
+            'data_inicio': request.args.get('data_inicio', ''),
+            'data_fim': request.args.get('data_fim', ''),
+        }
+        try:
+            return jsonify(GerarRelatorioService().executar(g.empresa_id, filtros))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
 
 
 relatorio_controller = RelatorioController()
