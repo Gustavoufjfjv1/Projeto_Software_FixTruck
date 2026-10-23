@@ -92,6 +92,7 @@ class OcorrenciaController:
                 g.empresa_id,
                 ocorrencia_id,
                 raio=request.args.get('raio', type=float),
+                janela=request.args.get('janela', type=int),
             ))
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
