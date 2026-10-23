@@ -1,5 +1,6 @@
 """Validações de entrada reutilizadas pelos Services. Erros viram ServiceError 422."""
 import re
+from datetime import date
 
 from services.erros import ServiceError
 
@@ -155,6 +156,29 @@ def senha(valor, rotulo='Senha', min_len=6, max_len=128):
     if len(valor) > max_len:
         raise erro(f'{rotulo} deve ter no máximo {max_len} caracteres.')
     return valor
+
+
+def data(valor, rotulo, obrigatorio=False):
+    """Data no formato AAAA-MM-DD (o mesmo do <input type="date">); devolve a string normalizada."""
+    valor = str(valor or '').strip()
+    if not valor:
+        if obrigatorio:
+            raise erro(f'{rotulo} é obrigatória.')
+        return None
+    try:
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', valor):
+            raise ValueError
+        return date.fromisoformat(valor).isoformat()
+    except ValueError:
+        raise erro(f'{rotulo} inválida. Use o formato AAAA-MM-DD.')
+
+
+def intervalo_datas(inicio, fim):
+    inicio = data(inicio, 'Data inicial')
+    fim = data(fim, 'Data final')
+    if inicio and fim and inicio > fim:
+        raise erro('A data inicial deve ser anterior ou igual à data final.')
+    return inicio, fim
 
 
 def identificador(valor, rotulo, obrigatorio=False):

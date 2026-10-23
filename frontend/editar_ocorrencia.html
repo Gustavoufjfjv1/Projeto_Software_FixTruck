@@ -50,7 +50,7 @@ async function carregar() {
                     <a href="detalhe_ocorrencia.html?id=${id}" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
                 </div>
                 <div class="card" style="max-width:600px">
-                    <div class="alert alert-info">
+                    <div class="alert alert-texto alert-info">
                         Ocorrências já resolvidas ficam bloqueadas para edição, para preservar o histórico.
                     </div>
                     <a href="detalhe_ocorrencia.html?id=${id}" class="btn btn-primary btn-full">Ver detalhes da ocorrência</a>
@@ -61,7 +61,7 @@ async function carregar() {
 
         const partes = Localizacao.separarEndereco(oc.endereco);
         const avisoVinculo = oc.status === 'em_atendimento' ? `
-            <div class="alert alert-warning" style="margin-bottom:16px">
+            <div class="alert alert-texto alert-warning" style="margin-bottom:16px">
                 Esta ocorrência já está vinculada à oficina <strong>${esc(oc.oficina_nome || '—')}</strong>.
                 Se você mudar o tipo de problema ou o veículo, busque oficinas novamente
                 para confirmar que ela ainda é compatível.

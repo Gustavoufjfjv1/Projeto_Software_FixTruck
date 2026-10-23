@@ -40,7 +40,7 @@ if (!id) {
                     <a href="ocorrencias.html" class="btn btn-outline">${Icons.arrowLeft(16)} Voltar</a>
                 </div>
                 <div class="card" style="max-width:600px">
-                    <div class="alert alert-info">
+                    <div class="alert alert-texto alert-info">
                         Esta ocorrência já foi encerrada em ${formatDate(oc.data_encerramento)},
                         com a oficina <strong>${esc(oc.oficina_nome || '—')}</strong>. Não é possível encerrá-la novamente.
                     </div>
@@ -73,7 +73,7 @@ if (!id) {
                 <div class="card">
                     <div class="card-header"><span class="card-title">Registro de Encerramento</span></div>
 
-                    <div class="alert alert-warning" style="margin-bottom:16px">
+                    <div class="alert alert-texto alert-warning" style="margin-bottom:16px">
                         ${Icons.alert(16)} Selecionar uma oficina é <strong>obrigatório</strong> para encerrar a ocorrência.
                     </div>
 

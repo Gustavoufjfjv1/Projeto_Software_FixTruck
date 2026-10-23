@@ -24,12 +24,7 @@
 <div class="card">
     <form id="filtrosForm">
         <div class="filters-bar">
-            <select name="periodo" id="filtro_periodo" class="filter-select">
-                <option value="">Todo período</option>
-                <option value="7d">Últimos 7 dias</option>
-                <option value="30d">Últimos 30 dias</option>
-                <option value="90d">Últimos 90 dias</option>
-            </select>
+            <span id="filtro-datas" style="display:contents"></span>
             <select name="tipo" id="filtro_tipo" class="filter-select">
                 <option value="">Tipo de problema</option>
             </select>
@@ -52,32 +47,33 @@
 <script src="js/api.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/layout.js"></script>
+<script src="js/filtro_datas.js"></script>
 <script>
 if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('ocorrencias');
 
-const periodo = qs('periodo') || '';
 const tipo = qs('tipo') || '';
 const veiculo = qs('veiculo') || '';
 const status = qs('status') || '';
 
-document.getElementById('filtro_periodo').value = periodo;
+document.getElementById('filtro-datas').innerHTML = FiltroDatas.html();
+FiltroDatas.ligar(() => applyFilters());
 document.getElementById('filtro_status').value = status;
 carregarOpcoes().then(o => {
     document.getElementById('filtro_tipo').innerHTML = optionsHtml(o.tipos_problema, tipo, 'Tipo de problema');
 }).catch(() => {});
 
-if (periodo || tipo || veiculo || status) {
+if (FiltroDatas.ativo() || tipo || veiculo || status) {
     document.getElementById('btn-limpar').style.display = '';
 }
 
 function applyFilters() {
-    const params = new URLSearchParams();
-    const p = document.getElementById('filtro_periodo').value;
+    const datas = FiltroDatas.valores();
+    if (!datas) return;
+    const params = new URLSearchParams(datas);
     const t = document.getElementById('filtro_tipo').value;
     const v = document.getElementById('filtro_veiculo').value;
     const s = document.getElementById('filtro_status').value;
-    if (p) params.set('periodo', p);
     if (t) params.set('tipo', t);
     if (v) params.set('veiculo', v);
     if (s) params.set('status', s);
@@ -85,7 +81,7 @@ function applyFilters() {
     window.location.href = 'ocorrencias.html' + (q ? '?' + q : '');
 }
 
-['filtro_periodo', 'filtro_tipo', 'filtro_veiculo', 'filtro_status'].forEach(id => {
+['filtro_tipo', 'filtro_veiculo', 'filtro_status'].forEach(id => {
     document.getElementById(id).addEventListener('change', applyFilters);
 });
 
@@ -101,7 +97,7 @@ async function atualizarStatus(id, novoStatus) {
 
 async function load() {
     const params = new URLSearchParams();
-    if (periodo) params.set('periodo', periodo);
+    Object.entries(FiltroDatas.atuais()).forEach(([k, val]) => { if (val) params.set(k, val); });
     if (tipo) params.set('tipo', tipo);
     if (veiculo) params.set('veiculo', veiculo);
     if (status) params.set('status', status);
