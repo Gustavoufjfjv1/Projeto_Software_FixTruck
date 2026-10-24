@@ -11,7 +11,7 @@ class MotoristaRepository:
         query = 'SELECT * FROM motoristas WHERE empresa_id=?'
         params = [empresa_id]
         if apenas_ativos:
-            query += ' AND ativo=1'
+            query += ' AND COALESCE(ativo, 1)=1'
         query += ' ORDER BY nome'
         return rows_to_list(get_db().execute(query, params).fetchall())
 
@@ -34,3 +34,16 @@ class MotoristaRepository:
         if not row:
             return None
         return Motorista.buscar_por_id(row['id'])
+
+    @staticmethod
+    def buscar_por_termo(empresa_id, termo):
+        rows = get_db().execute(
+            """SELECT m.*,
+                      (SELECT placa FROM veiculos WHERE motorista_id=m.id LIMIT 1) as veiculo_placa
+               FROM motoristas m
+               WHERE m.empresa_id=?
+                 AND (m.nome LIKE ? OR m.cnh LIKE ? OR m.telefone LIKE ?)
+               ORDER BY m.nome LIMIT 50""",
+            (empresa_id, f'%{termo}%', f'%{termo}%', f'%{termo}%'),
+        ).fetchall()
+        return rows_to_list(rows)

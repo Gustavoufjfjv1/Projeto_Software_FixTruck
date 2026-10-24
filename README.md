@@ -30,20 +30,49 @@ O FixTruck é um sistema de gestão de ocorrências mecânicas projetado especif
 
 ## Funcionalidades Implementadas
 
+As funcionalidades abaixo estão conectadas à interface, API Flask, Controller, Service e persistência no SQLite, conforme aplicável:
+
 1. Cadastrar empresa
-2. Autenticar empresa (login)
-3. Cadastrar motorista
-4. Cadastrar veículo
-5. Registrar ocorrência
-6. Listar ocorrências (com filtros)
-7. Buscar oficinas para ocorrência
-8. Favoritar oficina
-9. Enviar e decidir orçamento
-10. Gerar relatório de ocorrências
+2. Autenticar empresa
+3. Solicitar recuperação de senha
+4. Redefinir senha com token
+5. Consultar dashboard operacional
+6. Consultar e atualizar perfil da empresa
+7. Cadastrar motorista
+8. Listar frota e motoristas
+9. Cadastrar veículo
+10. Vincular ou desvincular motorista de veículo
+11. Registrar ocorrência
+12. Listar e filtrar ocorrências por período, status, tipo e veículo
+13. Consultar detalhes da ocorrência
+14. Atualizar ocorrência
+15. Atualizar status da ocorrência
+16. Buscar oficinas compatíveis para uma ocorrência
+17. Vincular oficina à ocorrência
+18. Encerrar ocorrência como resolvida
+19. Listar oficinas por busca e localização
+20. Consultar detalhes da oficina
+21. Favoritar ou desfavoritar oficina
+22. Consultar oficinas favoritas
+23. Gerar relatório operacional por período
+24. Buscar motoristas por nome, CNH ou telefone
+25. Atualizar cadastro de motorista
+26. Inativar motorista (com validação de vínculo com veículo)
+27. Reativar motorista
+28. Excluir motorista sem vínculos ou ocorrências históricas
+29. Atualizar dados de veículo
+30. Excluir veículo sem ocorrências históricas
+31. Reabrir ocorrência resolvida
+32. Filtrar relatórios por status da ocorrência
+33. Exportar relatório filtrado em CSV
 
-Cada funcionalidade está disponível de ponta a ponta: Interface → API Flask → Controller (classe) → Service (um por caso de uso) → Model/`Repository` → Banco de Dados.
+As funcionalidades 24 a 33 foram acrescentadas nesta etapa. As exclusões preservam o histórico e são recusadas quando há ocorrências ou vínculos que dependem do registro. O relatório CSV respeita os mesmos filtros de período e status da tela.
 
-Também estão implementados no mesmo padrão: vincular motorista ao veículo, encerrar ocorrência, dashboard e atualizar perfil.
+O diagrama de classes do domínio está em [docs/diagrama_classes.md](./docs/diagrama_classes.md).
+
+### Base de oficinas
+
+`backend/data/oficinas_bh.json` contém estabelecimentos de Belo Horizonte filtrados pelos CNAEs de serviços automotivos 4520001 a 4520008. As coordenadas do shapefile municipal foram convertidas de SIRGAS 2000 / UTM 23S para latitude e longitude. A fonte não informa atendimento a caminhões, telefone, horário de funcionamento ou disponibilidade de guincho; esses dados permanecem como não informados.
 
 ## Estrutura do projeto
 
@@ -56,7 +85,10 @@ fixtruck/
 │   ├── services/         # Um Service por caso de uso
 │   ├── models/           # Entidades db.Model com CRUD (SQLAlchemy)
 │   ├── repositories/     # Consultas SQL puro / filtros / relatórios
+│   ├── data/             # Base pública filtrada de oficinas de Belo Horizonte
 │   └── fixtruck.db
+├── docs/
+│   └── diagrama_classes.md
 └── frontend/             # Interface que consome a API
     ├── *.html
     ├── css/

@@ -40,6 +40,15 @@ function badgesVeiculo(tipos) {
     }).join('');
 }
 
+function coordenadasValidas(lat, lon) {
+    if (lat == null || lon == null || lat === '' || lon === '') return false;
+    const latitude = Number(lat);
+    const longitude = Number(lon);
+    return Number.isFinite(latitude) && Number.isFinite(longitude)
+        && latitude >= -90 && latitude <= 90
+        && longitude >= -180 && longitude <= 180;
+}
+
 async function favoritar() {
     try {
         const data = await Api.post(`/api/oficinas/${id}/favoritar`);
@@ -61,7 +70,7 @@ async function load() {
 
         const lat = Number(of.lat);
         const lon = Number(of.lon);
-        const mapHtml = (of.lat && of.lon) ? `
+        const mapHtml = coordenadasValidas(of.lat, of.lon) ? `
             <div style="margin-top:20px">
                 <div class="map-container">
                     <iframe
@@ -91,9 +100,11 @@ async function load() {
                     <div class="card-header">
                         <span class="card-title">Informações</span>
                         <span>
-                            ${aberta
+                            ${aberta === true
                                 ? '<span class="badge badge-green">● Aberta agora</span>'
-                                : '<span class="badge badge-gray">● Fechada</span>'}
+                                : aberta === false
+                                    ? '<span class="badge badge-gray">● Fechada</span>'
+                                    : '<span class="badge badge-gray">● Horário não informado</span>'}
                         </span>
                     </div>
 
@@ -107,12 +118,17 @@ async function load() {
                     </div>
                     <div class="info-row">
                         <span class="info-label">Horário de funcionamento</span>
-                        <span class="info-value">${of.hora_abertura || ''} às ${of.hora_fechamento || ''}</span>
+                        <span class="info-value">${of.hora_abertura && of.hora_fechamento
+                            ? `${of.hora_abertura} às ${of.hora_fechamento}`
+                            : 'Não informado'}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Guincho disponível</span>
-                        <span class="info-value">${of.tem_guincho ? Icons.check(16) + ' Sim' : Icons.x(16) + ' Não'}</span>
+                        <span class="info-value">${of.tem_guincho === 1
+                            ? Icons.check(16) + ' Sim'
+                            : of.tem_guincho === 0 ? Icons.x(16) + ' Não' : 'Não informado'}</span>
                     </div>
+                    ${of.cnae ? `<div class="info-row"><span class="info-label">CNAE(s)</span><span class="info-value">${of.cnae}</span></div>` : ''}
                     <div class="info-row">
                         <span class="info-label">Especialidades</span>
                         <span class="info-value">
@@ -125,7 +141,7 @@ async function load() {
                         <span class="info-label">Atende veículos</span>
                         <span class="info-value">
                             <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end">
-                            ${badgesVeiculo(of.tipos_veiculo)}
+                            ${of.tipos_veiculo ? badgesVeiculo(of.tipos_veiculo) : 'Não informado'}
                             </div>
                         </span>
                     </div>
@@ -150,7 +166,7 @@ async function load() {
                             </div>
                             <div>
                                 <div style="font-size:12px;font-weight:600;color:var(--gray-400);margin-bottom:6px">TIPOS DE VEÍCULO</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:6px">${badgesVeiculo(of.tipos_veiculo)}</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:6px">${of.tipos_veiculo ? badgesVeiculo(of.tipos_veiculo) : 'Não informado'}</div>
                             </div>
                         </div>
                     </div>

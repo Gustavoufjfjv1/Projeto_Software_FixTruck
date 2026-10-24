@@ -1,3 +1,4 @@
+import json
 import os
 import sqlite3
 from flask import g
@@ -35,6 +36,11 @@ def init_db():
     _ensure_column(conn, 'ocorrencias', 'motorista_id', 'INTEGER')
     _ensure_column(conn, 'ocorrencias', 'veiculo_id', 'INTEGER')
     _ensure_column(conn, 'ocorrencias', 'data_vinculacao', 'DATETIME')
+    _ensure_column(conn, 'ocorrencias', 'data_reabertura', 'DATETIME')
+    _ensure_column(conn, 'motoristas', 'ativo', 'INTEGER NOT NULL DEFAULT 1')
+    _ensure_column(conn, 'oficinas', 'cnae', 'VARCHAR(80)')
+    conn.execute('UPDATE motoristas SET ativo=1 WHERE ativo IS NULL')
+    conn.commit()
 
     try:
         conn.execute("UPDATE ocorrencias SET status='resolvido' WHERE status='encerrada'")
@@ -112,9 +118,9 @@ def init_db():
                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 [
                     (eid, mids[0], vids[0], 'pesado', 'mecânica', 1, '-23.5613', '-46.6558',
-                     'Rodovia Anhanguera KM 45', 'resolvido', 1, '2024-05-01 09:00', '2024-05-01 13:30', '2024-05-01 09:40'),
+                     'Rodovia Anhanguera KM 45', 'resolvido', 1, '2024-05-01 09:00', '2024-05-01 09:00', '2024-05-01 09:00'),
                     (eid, mids[1], vids[1], 'pesado', 'borracharia', 0, '-23.5200', '-46.6300',
-                     'Av. Brasil, 500', 'resolvido', 2, '2024-05-10 14:00', '2024-05-10 15:45', '2024-05-10 14:20'),
+                     'Av. Brasil, 500', 'resolvido', 2, '2024-05-10 14:00', '2024-05-10 14:00', '2024-05-10 14:00'),
                     (eid, mids[2], vids[2], 'médio', 'elétrica', 0, '-23.5900', '-46.6100',
                      'Rod. Dutra KM 180', 'em_atendimento', None, '2024-05-20 08:30', None, None),
                     (eid, mids[0], vids[0], 'pesado', 'mecânica', 0, '-23.5500', '-46.6800',
@@ -122,6 +128,53 @@ def init_db():
                 ],
             )
         conn.commit()
+
+    oficinas_demo = (
+        'Auto Mecânica Silva',
+        'Borracharia Rápida BR',
+        'Elétrica Diesel Master',
+        'Hidráulica & Freios SP',
+        'Oficina do Zé Mecânico',
+        'Truck Center Premium',
+        'Mecânica Rodo Sul',
+        'Auto Peças & Serviços',
+    )
+    placeholders = ','.join('?' for _ in oficinas_demo)
+    conn.execute(
+        f'UPDATE oficinas SET ativa=0 WHERE cnae IS NULL AND nome IN ({placeholders})',
+        oficinas_demo,
+    )
+    if conn.execute(
+        'SELECT 1 FROM oficinas WHERE cnae IS NOT NULL LIMIT 1'
+    ).fetchone() is None:
+        dataset_path = os.path.join(os.path.dirname(__file__), 'data', 'oficinas_bh.json')
+        with open(dataset_path, encoding='utf-8') as arquivo:
+            oficinas_bh = json.load(arquivo)
+        if not isinstance(oficinas_bh, list) or not oficinas_bh:
+            raise ValueError('A base de oficinas de Belo Horizonte está vazia ou inválida.')
+        conn.executemany(
+            """INSERT INTO oficinas (nome, endereco, telefone, lat, lon, cnae,
+               especialidades, tipos_veiculo, tem_guincho, hora_abertura,
+               hora_fechamento, ativa) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            [
+                (
+                    oficina['nome'],
+                    oficina['endereco'],
+                    None,
+                    oficina['lat'],
+                    oficina['lon'],
+                    oficina['cnae'],
+                    oficina['especialidades'],
+                    None,
+                    None,
+                    None,
+                    None,
+                    1,
+                )
+                for oficina in oficinas_bh
+            ],
+        )
+    conn.commit()
 
     demo = conn.execute("SELECT id FROM empresas WHERE email='demo@fixtruck.com'").fetchone()
     if demo:
@@ -150,4 +203,6 @@ def init_db():
                 ],
             )
         conn.commit()
+    conn.execute('UPDATE motoristas SET ativo=1 WHERE ativo IS NULL')
+    conn.commit()
     conn.close()

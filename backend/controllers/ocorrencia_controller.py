@@ -9,6 +9,7 @@ from services import (
     BuscarOficinasParaOcorrenciaService,
     EncerrarOcorrenciaService,
     AtualizarStatusOcorrenciaService,
+    ReabrirOcorrenciaService,
     VincularOficinaOcorrenciaService,
     ServiceError,
 )
@@ -38,6 +39,11 @@ class OcorrenciaController:
         self.bp.add_url_rule(
             '/<int:ocorrencia_id>/encerrar',
             view_func=login_required(self.encerrar),
+            methods=['POST'],
+        )
+        self.bp.add_url_rule(
+            '/<int:ocorrencia_id>/reabrir',
+            view_func=login_required(self.reabrir),
             methods=['POST'],
         )
         self.bp.add_url_rule(
@@ -101,6 +107,14 @@ class OcorrenciaController:
             return jsonify(EncerrarOcorrenciaService().executar(
                 g.empresa_id, ocorrencia_id, request.get_json(silent=True) or {}
             ))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
+    def reabrir(self, ocorrencia_id):
+        try:
+            return jsonify(
+                ReabrirOcorrenciaService().executar(g.empresa_id, ocorrencia_id)
+            )
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
 

@@ -10,4 +10,4 @@ class Motorista(ModeloBase):
     nome = db.Column(db.String, nullable=False)
     cnh = db.Column(db.String)
     telefone = db.Column(db.String)
-    ativo = db.Column(db.Integer, default=1)
+    ativo = db.Column(db.Integer, nullable=False, default=1, server_default='1')

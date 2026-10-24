@@ -16,12 +16,14 @@ def haversine(lat1, lon1, lat2, lon2):
 
 
 def oficina_aberta_agora(hora_abertura, hora_fechamento):
+    if not hora_abertura or not hora_fechamento:
+        return None
     agora = datetime.now()
     try:
-        h_ab, m_ab = map(int, (hora_abertura or '08:00').split(':')[:2])
-        h_fe, m_fe = map(int, (hora_fechamento or '18:00').split(':')[:2])
+        h_ab, m_ab = map(int, hora_abertura.split(':')[:2])
+        h_fe, m_fe = map(int, hora_fechamento.split(':')[:2])
     except (ValueError, AttributeError):
-        h_ab, m_ab, h_fe, m_fe = 8, 0, 18, 0
+        return None
     minutos_agora = agora.hour * 60 + agora.minute
     minutos_ab = h_ab * 60 + m_ab
     minutos_fe = h_fe * 60 + m_fe

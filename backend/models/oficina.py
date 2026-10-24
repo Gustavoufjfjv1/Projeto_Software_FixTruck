@@ -11,6 +11,7 @@ class Oficina(ModeloBase):
     telefone = db.Column(db.String)
     lat = db.Column(db.Float)
     lon = db.Column(db.Float)
+    cnae = db.Column(db.String(80))
     especialidades = db.Column(db.String)
     tipos_veiculo = db.Column(db.String)
     tem_guincho = db.Column(db.Integer, default=0)

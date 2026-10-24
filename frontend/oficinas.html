@@ -145,7 +145,7 @@ async function load() {
         container.innerHTML = `
             <div class="oficinas-grid">
             ${oficinas.map(of => `
-                <div class="oficina-card ${of.aberta_agora ? '' : 'oficina-card-fechada'}">
+                <div class="oficina-card ${of.aberta_agora === false ? 'oficina-card-fechada' : ''}">
                     ${of.tem_guincho ? `
                     <div style="position:absolute;top:14px;right:14px">
                         <span class="guincho-badge">Guincho</span>
@@ -160,15 +160,20 @@ async function load() {
                     <div class="oficina-meta">
                         ${of.distancia != null ? `<span>${of.distancia} km</span>` : ''}
                         <span>
-                            ${of.aberta_agora
+                            ${of.aberta_agora === true
                                 ? '<span style="color:var(--green);font-weight:600">● Aberta agora</span>'
-                                : '<span style="color:var(--red)">● Fechada agora</span>'}
+                                : of.aberta_agora === false
+                                    ? '<span style="color:var(--red)">● Fechada agora</span>'
+                                    : '<span>● Horário não informado</span>'}
                         </span>
-                        <span>Horário: ${of.hora_abertura || ''}–${of.hora_fechamento || ''}</span>
+                        <span>Horário: ${of.hora_abertura && of.hora_fechamento
+                            ? `${of.hora_abertura}–${of.hora_fechamento}`
+                            : 'não informado'}</span>
                     </div>
                     <div style="margin-top:8px;font-size:12px;color:var(--gray-500)">
-                        Veículos: <strong>${of.tipos_veiculo || '—'}</strong>
+                        Veículos: <strong>${of.tipos_veiculo || 'não informado'}</strong>
                     </div>
+                    ${of.cnae ? `<div style="margin-top:8px;font-size:12px;color:var(--gray-500)">CNAE: ${of.cnae}</div>` : ''}
                     <div class="oficina-actions">
                         ${of.telefone ? `<a href="tel:${of.telefone}" class="btn btn-outline btn-sm">${Icons.phone(14)} Ligar</a>` : ''}
                         <a href="detalhe_oficina.html?id=${of.id}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center">Ver detalhes</a>
