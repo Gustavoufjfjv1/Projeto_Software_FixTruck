@@ -7,7 +7,14 @@ from services.redefinir_senha_service import RedefinirSenhaService
 from services.obter_dashboard_service import ObterDashboardService
 from services.listar_frota_service import ListarFrotaService
 from services.cadastrar_motorista_service import CadastrarMotoristaService
+from services.buscar_motoristas_service import BuscarMotoristasService
+from services.atualizar_motorista_service import AtualizarMotoristaService
+from services.inativar_motorista_service import InativarMotoristaService
+from services.reativar_motorista_service import ReativarMotoristaService
+from services.excluir_motorista_service import ExcluirMotoristaService
 from services.cadastrar_veiculo_service import CadastrarVeiculoService
+from services.atualizar_veiculo_service import AtualizarVeiculoService
+from services.excluir_veiculo_service import ExcluirVeiculoService
 from services.vincular_motorista_veiculo_service import VincularMotoristaVeiculoService
 from services.listar_ocorrencias_service import ListarOcorrenciasService
 from services.obter_dados_formulario_ocorrencia_service import ObterDadosFormularioOcorrenciaService
@@ -22,6 +29,9 @@ from services.listar_oficinas_service import ListarOficinasService
 from services.obter_detalhe_oficina_service import ObterDetalheOficinaService
 from services.favoritar_oficina_service import FavoritarOficinaService
 from services.gerar_relatorio_service import GerarRelatorioService
+from services.filtrar_relatorio_service import FiltrarRelatorioService
+from services.gerar_relatorio_csv_service import GerarRelatorioCsvService
+from services.reabrir_ocorrencia_service import ReabrirOcorrenciaService
 from services.obter_perfil_service import ObterPerfilService
 from services.atualizar_perfil_service import AtualizarPerfilService
 
@@ -35,7 +45,14 @@ __all__ = [
     'ObterDashboardService',
     'ListarFrotaService',
     'CadastrarMotoristaService',
+    'BuscarMotoristasService',
+    'AtualizarMotoristaService',
+    'InativarMotoristaService',
+    'ReativarMotoristaService',
+    'ExcluirMotoristaService',
     'CadastrarVeiculoService',
+    'AtualizarVeiculoService',
+    'ExcluirVeiculoService',
     'VincularMotoristaVeiculoService',
     'ListarOcorrenciasService',
     'ObterDadosFormularioOcorrenciaService',
@@ -50,6 +67,9 @@ __all__ = [
     'ObterDetalheOficinaService',
     'FavoritarOficinaService',
     'GerarRelatorioService',
+    'FiltrarRelatorioService',
+    'GerarRelatorioCsvService',
+    'ReabrirOcorrenciaService',
     'ObterPerfilService',
     'AtualizarPerfilService',
 ]

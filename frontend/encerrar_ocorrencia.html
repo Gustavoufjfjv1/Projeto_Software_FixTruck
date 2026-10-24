@@ -29,7 +29,6 @@ if (!id) {
     try {
         const data = await Api.get(`/api/ocorrencias/${id}`);
         const oc = data.ocorrencia;
-        const oficinas = data.oficinas || [];
 
         document.title = `Encerrar Ocorrência — FixTruck`;
 
@@ -79,13 +78,14 @@ if (!id) {
 
                     <form id="encerrarForm">
                         <div class="form-group">
-                            <label>Oficina Utilizada *</label>
+                            <label for="buscar-oficina">Buscar oficina por nome</label>
+                            <input type="search" id="buscar-oficina" placeholder="Digite pelo menos 3 caracteres..." autocomplete="off">
+                            <small id="resultado-busca-oficina" style="display:block;margin-top:6px;color:var(--gray-500)">Digite ao menos 3 caracteres para pesquisar.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="oficina_id">Oficina Utilizada *</label>
                             <select name="oficina_id" id="oficina_id" required>
                                 <option value="">Selecione a oficina...</option>
-                                ${oficinas.map(of => {
-                                    const sel = String(oficinaPre || oc.oficina_id || '') === String(of.id) ? 'selected' : '';
-                                    return `<option value="${of.id}" ${sel}>${of.nome} — ${of.endereco || ''}</option>`;
-                                }).join('')}
                             </select>
                         </div>
                         <div class="form-group">
@@ -111,6 +111,85 @@ if (!id) {
         `;
 
         hydrateIcons();
+        const oficinaSelect = document.getElementById('oficina_id');
+        const campoBusca = document.getElementById('buscar-oficina');
+        const resultadoBusca = document.getElementById('resultado-busca-oficina');
+
+        if (oc.oficina_id) {
+            const option = new Option(
+                `${oc.oficina_nome || 'Oficina já vinculada'} (já selecionada)`,
+                oc.oficina_id,
+                true,
+                true
+            );
+            oficinaSelect.add(option);
+        }
+
+        if (oficinaPre && String(oficinaPre) !== String(oc.oficina_id || '')) {
+            try {
+                const selecionada = await Api.get(`/api/oficinas/${encodeURIComponent(oficinaPre)}`);
+                const oficina = selecionada.oficina;
+                oficinaSelect.add(new Option(
+                    `${oficina.nome} — ${oficina.endereco || ''}`,
+                    oficina.id,
+                    true,
+                    true
+                ));
+            } catch (err) {
+                showFlash(`Não foi possível carregar a oficina selecionada: ${err.message}`, 'error');
+            }
+        }
+
+        let buscaAtual = 0;
+        let temporizadorBusca;
+        campoBusca.addEventListener('input', () => {
+            window.clearTimeout(temporizadorBusca);
+            const termo = campoBusca.value.trim();
+            const requisicao = ++buscaAtual;
+            if (termo.length < 3) {
+                resultadoBusca.textContent = 'Digite ao menos 3 caracteres para pesquisar.';
+                Array.from(oficinaSelect.options).slice(1).forEach(option => {
+                    if (option.value !== String(oficinaSelect.value)) option.remove();
+                });
+                return;
+            }
+
+            resultadoBusca.textContent = 'Pesquisando oficinas...';
+            temporizadorBusca = window.setTimeout(async () => {
+                try {
+                    const query = new URLSearchParams({
+                        busca: termo,
+                        limite: '30',
+                        campo: 'nome',
+                    });
+                    const resultado = await Api.get(`/api/oficinas?${query}`);
+                    if (requisicao !== buscaAtual) return;
+
+                    const oficinaAtual = Array.from(oficinaSelect.options)
+                        .find(option => option.value === String(oficinaSelect.value));
+                    oficinaSelect.replaceChildren(new Option('Selecione a oficina...', ''));
+                    if (oficinaAtual && oficinaAtual.value) oficinaSelect.add(oficinaAtual);
+
+                    const oficinas = resultado.oficinas || [];
+                    oficinas.forEach(oficina => {
+                        if (oficina.id === Number(oficinaSelect.value)) return;
+                        oficinaSelect.add(new Option(
+                            `${oficina.nome} — ${oficina.endereco || ''}`,
+                            oficina.id
+                        ));
+                    });
+                    resultadoBusca.textContent = oficinas.length
+                        ? `${oficinas.length} resultado(s). Selecione a oficina desejada.`
+                        : 'Nenhuma oficina encontrada. Tente outro nome.';
+                    oficinaSelect.value = oficinaAtual ? oficinaAtual.value : '';
+                } catch (err) {
+                    if (requisicao === buscaAtual) {
+                        resultadoBusca.textContent = `Erro ao pesquisar oficinas: ${err.message}`;
+                    }
+                }
+            }, 300);
+        });
+
         document.getElementById('encerrarForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             try {

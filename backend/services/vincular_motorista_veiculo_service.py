@@ -11,8 +11,8 @@ class VincularMotoristaVeiculoService:
         motorista_id = dados.get('motorista_id') or None
         if motorista_id:
             mot = MotoristaRepository.buscar_da_empresa(motorista_id, empresa_id)
-            if not mot:
-                raise ServiceError('Motorista inválido.', 400)
+            if not mot or not mot.ativo:
+                raise ServiceError('Motorista inválido ou inativo.', 400)
 
         veiculo.motorista_id = motorista_id
         veiculo.atualizar()

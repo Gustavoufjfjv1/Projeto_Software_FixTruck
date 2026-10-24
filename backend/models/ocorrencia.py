@@ -20,5 +20,6 @@ class Ocorrencia(ModeloBase):
     motivo_resolucao = db.Column(db.String)
     observacoes = db.Column(db.String)
     data_abertura = db.Column(db.String)
+    data_reabertura = db.Column(db.String)
     data_encerramento = db.Column(db.String)
     data_vinculacao = db.Column(db.String)

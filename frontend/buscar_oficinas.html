@@ -27,6 +27,23 @@ if (!id) {
 }
 
 const raioParam = qs('raio') || '';
+const TAMANHO_PAGINA = 40;
+const LIMITE_MARCADORES = 100;
+
+function coordenadasValidas(lat, lon) {
+    if (lat == null || lon == null || lat === '' || lon === '') return false;
+    const latitude = Number(lat);
+    const longitude = Number(lon);
+    return Number.isFinite(latitude) && Number.isFinite(longitude)
+        && latitude >= -90 && latitude <= 90
+        && longitude >= -180 && longitude <= 180;
+}
+
+function textoHorario(aberta) {
+    if (aberta === true) return '<span style="color:var(--green);font-weight:600">● Aberta agora</span>';
+    if (aberta === false) return '<span style="color:var(--red)">● Fechada agora</span>';
+    return '<span>● Horário não informado</span>';
+}
 
 function tagsEsp(especialidades, tipoProblema) {
     return (especialidades || '').split(',').map(esp => {
@@ -58,7 +75,7 @@ async function favoritar(oficinaId) {
 }
 
 function renderCard(of, oc) {
-    const fechada = !of.aberta_agora;
+    const fechada = of.aberta_agora === false;
     return `
     <div class="oficina-card ${of.recomendada ? 'oficina-card-recomendada' : ''} ${fechada ? 'oficina-card-fechada' : ''}">
         ${of.recomendada ? `<div class="recomendada-ribbon">${Icons.checkSimple(14)} Recomendada</div>` : ''}
@@ -76,17 +93,18 @@ function renderCard(of, oc) {
         <div class="oficina-tags">${tagsEsp(of.especialidades, oc.tipo_problema)}</div>
         <div class="oficina-meta">
             ${of.distancia != null ? `<span>${of.distancia} km</span>` : ''}
-            <span>${of.aberta_agora
-                ? '<span style="color:var(--green);font-weight:600">● Aberta agora</span>'
-                : '<span style="color:var(--red)">● Fechada agora</span>'}</span>
-            <span>${of.tipos_veiculo || ''}</span>
+            <span>${textoHorario(of.aberta_agora)}</span>
+            <span>${of.tipos_veiculo || 'Atendimento a veículos não informado'}</span>
         </div>
         <div style="margin-top:12px;font-size:13px;color:var(--gray-600)">
-            Horário: ${of.hora_abertura || ''} – ${of.hora_fechamento || ''}
+            Horário: ${of.hora_abertura && of.hora_fechamento
+                ? `${of.hora_abertura} – ${of.hora_fechamento}`
+                : 'não informado'}
             ${of.telefone ? ` &nbsp;|&nbsp; ${of.telefone}` : ''}
         </div>
+        ${of.cnae ? `<div style="margin-top:8px;font-size:12px;color:var(--gray-500)">CNAE: ${of.cnae}</div>` : ''}
         <div style="display:flex;gap:10px;margin-top:16px;align-items:center;flex-wrap:wrap">
-            <button type="button" class="btn btn-primary btn-sm" data-vincular="${of.id}" data-aberta="${of.aberta_agora ? '1' : '0'}">Selecionar oficina</button>
+            <button type="button" class="btn btn-primary btn-sm" data-vincular="${of.id}" data-aberta="${of.aberta_agora === false ? '0' : '1'}">Selecionar oficina</button>
             ${of.telefone ? `<a href="tel:${of.telefone}" class="btn btn-outline btn-sm">${Icons.phone(14)} Ligar</a>` : ''}
             <a href="detalhe_oficina.html?id=${of.id}" class="btn btn-outline btn-sm">Ver detalhes</a>
             <button type="button" class="fav-btn ${of.favoritada ? 'active' : ''}" data-fav="${of.id}" title="Favoritar" style="margin-left:auto">
@@ -108,7 +126,7 @@ function initMap(oc, oficinas) {
 
     const bounds = [];
 
-    if (oc.lat && oc.lon) {
+    if (coordenadasValidas(oc.lat, oc.lon)) {
         const truckIcon = L.divIcon({
             className: 'map-marker-icon map-marker-truck',
             html: '🚚',
@@ -121,7 +139,7 @@ function initMap(oc, oficinas) {
     }
 
     oficinas.forEach(of => {
-        if (!of.lat || !of.lon) return;
+        if (!coordenadasValidas(of.lat, of.lon)) return;
         const cor = of.tem_guincho ? '#00a854' : (of.aberta_agora ? '#2563eb' : '#9ca3af');
         const icon = L.divIcon({
             className: 'map-marker-icon',
@@ -130,7 +148,8 @@ function initMap(oc, oficinas) {
         });
         const popup = `
             <strong>${of.nome}</strong><br>
-            ${of.distancia != null ? of.distancia + ' km &middot; ' : ''}${of.aberta_agora ? 'Aberta agora' : 'Fechada agora'}
+            ${of.distancia != null ? of.distancia + ' km &middot; ' : ''}${of.aberta_agora === true ? 'Aberta agora' : of.aberta_agora === false ? 'Fechada agora' : 'Horário não informado'}
+            ${of.cnae ? '<br>CNAE: ' + of.cnae : ''}
             ${of.tem_guincho ? '<br>🛻 Guincho disponível' : ''}
             <br><a href="detalhe_oficina.html?id=${of.id}">Ver detalhes</a>
         `;
@@ -151,13 +170,20 @@ async function load() {
         const oficinas = data.oficinas || [];
         const raio = data.raio;
 
-        const temCoordenadas = oficinas.some(of => of.lat && of.lon);
+        const temCoordenadas = coordenadasValidas(oc.lat, oc.lon)
+            || oficinas.some(of => coordenadasValidas(of.lat, of.lon));
         const mapaHtml = temCoordenadas
-            ? `<div id="mapa-busca" class="map-busca-container"></div>`
+            ? `<div id="mapa-busca" class="map-busca-container"></div>
+               ${oficinas.length > LIMITE_MARCADORES
+                    ? `<p style="font-size:12px;color:var(--gray-500)">O mapa exibe as ${LIMITE_MARCADORES} oficinas mais bem classificadas; a lista completa está abaixo.</p>`
+                    : ''}`
             : '';
 
         const listHtml = oficinas.length
-            ? `<div class="oficinas-grid">${oficinas.map(of => renderCard(of, oc)).join('')}</div>`
+            ? `<div class="oficinas-grid" id="lista-oficinas">${oficinas.slice(0, TAMANHO_PAGINA).map(of => renderCard(of, oc)).join('')}</div>
+               ${oficinas.length > TAMANHO_PAGINA
+                    ? `<div style="text-align:center;margin-top:16px"><button type="button" class="btn btn-outline" id="mostrar-mais-oficinas" data-exibidas="${TAMANHO_PAGINA}">Mostrar mais (${TAMANHO_PAGINA}/${oficinas.length})</button></div>`
+                    : ''}`
             : `<div class="empty-state">
                 <div class="empty-icon">${Icons.wrench(48)}</div>
                 <h3>Nenhuma oficina no raio selecionado</h3>
@@ -182,11 +208,16 @@ async function load() {
                 depois por compatibilidade com o problema/veículo, depois por horário e distância.
             </div>` : ''}
 
-            ${!oc.lat ? `
+            ${!coordenadasValidas(oc.lat, oc.lon) ? `
             <div class="alert alert-info">
                 Localização não capturada — mostrando todas as oficinas. Para filtrar por raio e ver o mapa
                 centralizado no caminhão, registre a localização GPS na ocorrência.
             </div>` : ''}
+
+            <div class="alert alert-info">
+                As oficinas são classificadas pelos CNAEs de serviços automotivos. A base pública não informa
+                atendimento a caminhões, telefone, horário ou guincho; confirme esses dados antes do deslocamento.
+            </div>
 
             <div class="card" style="margin-bottom:20px;padding:16px 20px">
                 <div class="filters-bar" style="margin-bottom:0">
@@ -225,24 +256,49 @@ async function load() {
         });
 
         if (temCoordenadas) {
-            initMap(oc, oficinas);
+            initMap(oc, oficinas.slice(0, LIMITE_MARCADORES));
         }
 
-        document.querySelectorAll('[data-vincular]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (btn.dataset.aberta === '0') {
-                    const confirmar = window.confirm(
-                        'Esta oficina está fechada agora. Ainda assim deseja selecioná-la para esta ocorrência?'
-                    );
-                    if (!confirmar) return;
-                }
-                vincular(btn.dataset.vincular);
+        function conectarAcoesOficina(container) {
+            container.querySelectorAll('[data-vincular]').forEach(btn => {
+                if (btn.dataset.acaoConectada) return;
+                btn.dataset.acaoConectada = '1';
+                btn.addEventListener('click', () => {
+                    if (btn.dataset.aberta === '0') {
+                        const confirmar = window.confirm(
+                            'Esta oficina está fechada agora. Ainda assim deseja selecioná-la para esta ocorrência?'
+                        );
+                        if (!confirmar) return;
+                    }
+                    vincular(btn.dataset.vincular);
+                });
             });
-        });
-        document.querySelectorAll('[data-fav]').forEach(btn => {
-            btn.addEventListener('click', () => favoritar(btn.dataset.fav));
-        });
+            container.querySelectorAll('[data-fav]').forEach(btn => {
+                if (btn.dataset.acaoConectada) return;
+                btn.dataset.acaoConectada = '1';
+                btn.addEventListener('click', () => favoritar(btn.dataset.fav));
+            });
+        }
+        conectarAcoesOficina(root);
         hydrateIcons(root);
+
+        const mostrarMais = document.getElementById('mostrar-mais-oficinas');
+        if (mostrarMais) {
+            mostrarMais.addEventListener('click', () => {
+                const inicio = Number(mostrarMais.dataset.exibidas);
+                const fim = Math.min(inicio + TAMANHO_PAGINA, oficinas.length);
+                const lista = document.getElementById('lista-oficinas');
+                lista.insertAdjacentHTML(
+                    'beforeend',
+                    oficinas.slice(inicio, fim).map(of => renderCard(of, oc)).join('')
+                );
+                mostrarMais.dataset.exibidas = String(fim);
+                mostrarMais.textContent = `Mostrar mais (${fim}/${oficinas.length})`;
+                if (fim >= oficinas.length) mostrarMais.remove();
+                conectarAcoesOficina(lista);
+                hydrateIcons(lista);
+            });
+        }
     } catch (err) {
         showFlash(err.message, 'error');
         document.getElementById('page-root').innerHTML = `

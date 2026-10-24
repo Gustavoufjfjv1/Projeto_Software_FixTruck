@@ -90,6 +90,41 @@ const Api = {
   patch(path, body) {
     return this.request(path, { method: 'PATCH', body: JSON.stringify(body || {}) });
   },
+
+  async download(path, filename) {
+    const headers = {};
+    const token = this.getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}${path}`, { headers });
+
+    if (res.status === 401) {
+      this.clearSession();
+      window.location.href = 'login.html';
+      throw new Error('Não autenticado');
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
+      const err = new Error((data && data.erro) || 'Erro ao baixar o arquivo');
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 };
 
 function showFlash(message, type = 'success') {

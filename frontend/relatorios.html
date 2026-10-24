@@ -14,12 +14,21 @@
         <h1>Relatórios</h1>
         <p>Indicadores de desempenho operacional</p>
     </div>
-    <select name="periodo" id="filtro_periodo" class="filter-select">
-        <option value="">Todo período</option>
-        <option value="7d">Últimos 7 dias</option>
-        <option value="30d">Últimos 30 dias</option>
-        <option value="90d">Últimos 90 dias</option>
-    </select>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select name="periodo" id="filtro_periodo" class="filter-select" aria-label="Filtrar por período">
+            <option value="">Todo período</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="90d">Últimos 90 dias</option>
+        </select>
+        <select name="status" id="filtro_status" class="filter-select" aria-label="Filtrar por status">
+            <option value="">Todos os status</option>
+            <option value="aberta">Aberta</option>
+            <option value="em_atendimento">Em atendimento</option>
+            <option value="resolvido">Resolvida</option>
+        </select>
+        <button type="button" id="exportarCsv" class="btn btn-outline">Exportar CSV</button>
+    </div>
 </div>
 
 <div id="stats-grid" class="stats-grid" style="margin-bottom:28px"></div>
@@ -33,10 +42,35 @@ if (!Api.requireAuth()) throw new Error('auth');
 renderLayout('relatorios');
 
 const periodo = qs('periodo') || '';
+const status = qs('status') || '';
 document.getElementById('filtro_periodo').value = periodo;
-document.getElementById('filtro_periodo').addEventListener('change', (e) => {
-    const p = e.target.value;
-    window.location.href = 'relatorios.html' + (p ? `?periodo=${p}` : '');
+document.getElementById('filtro_status').value = status;
+
+function aplicarFiltrosRelatorio() {
+    const params = new URLSearchParams();
+    const p = document.getElementById('filtro_periodo').value;
+    const s = document.getElementById('filtro_status').value;
+    if (p) params.set('periodo', p);
+    if (s) params.set('status', s);
+    const query = params.toString();
+    window.location.href = 'relatorios.html' + (query ? `?${query}` : '');
+}
+
+document.getElementById('filtro_periodo').addEventListener('change', aplicarFiltrosRelatorio);
+document.getElementById('filtro_status').addEventListener('change', aplicarFiltrosRelatorio);
+document.getElementById('exportarCsv').addEventListener('click', async () => {
+    const params = new URLSearchParams();
+    if (periodo) params.set('periodo', periodo);
+    if (status) params.set('status', status);
+    try {
+        await Api.download(
+            `/api/relatorios/exportar${params.toString() ? `?${params}` : ''}`,
+            'relatorio-fixtruck.csv',
+        );
+        showFlash('Relatório CSV baixado.', 'success');
+    } catch (err) {
+        showFlash(err.message, 'error');
+    }
 });
 
 function barRows(rows, labelKey, blue) {
@@ -64,7 +98,10 @@ function barRows(rows, labelKey, blue) {
 
 (async () => {
     try {
-        const q = periodo ? `?periodo=${encodeURIComponent(periodo)}` : '';
+        const params = new URLSearchParams();
+        if (periodo) params.set('periodo', periodo);
+        if (status) params.set('status', status);
+        const q = params.toString() ? `?${params}` : '';
         const data = await Api.get('/api/relatorios' + q);
         const total = data.total || 0;
         const abertas = data.abertas || 0;
