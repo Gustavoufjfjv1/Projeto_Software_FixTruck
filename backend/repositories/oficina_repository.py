@@ -54,10 +54,12 @@ class OficinaRepository:
         return {r['oficina_id'] for r in rows}
 
     @staticmethod
-    def listar_com_contexto(empresa_id, busca='', raio=None, lat=None, lon=None):
+    def listar_com_contexto(empresa_id, busca='', raio=None, lat=None, lon=None, limite=None, somente_nome=False):
         favoritos = OficinaRepository.ids_favoritos(empresa_id)
         resultado = []
-        for of in OficinaRepository.listar_ativas(busca):
+        for of in OficinaRepository.listar_ativas('' if somente_nome else busca):
+            if somente_nome and busca and busca.lower() not in (of.nome or '').lower():
+                continue
             of_dict = of.to_dict()
             of_dict['favoritada'] = of.id in favoritos
             of_dict['aberta_agora'] = esta_aberta(of.horarios, of.aberta_24h)
@@ -74,4 +76,6 @@ class OficinaRepository:
                     x['distancia'] if x['distancia'] is not None else 9999,
                 )
             )
+        if limite:
+            resultado = resultado[:limite]
         return resultado

@@ -128,6 +128,20 @@ class FrotaController:
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
 
+    def atualizar_veiculo(self, veiculo_id):
+        try:
+            return jsonify(AtualizarVeiculoService().executar(
+                g.empresa_id, veiculo_id, request.get_json(silent=True) or {}
+            ))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
+    def excluir_veiculo(self, veiculo_id):
+        try:
+            return jsonify(ExcluirVeiculoService().executar(g.empresa_id, veiculo_id))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
     def definir_acesso(self, motorista_id):
         try:
             return jsonify(DefinirAcessoMotoristaService().executar(
