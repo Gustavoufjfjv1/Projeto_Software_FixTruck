@@ -243,3 +243,14 @@ function formatDate(value) {
   if (!value) return '-';
   return String(value).slice(0, 16);
 }
+
+function formatarDuracao(minutos) {
+  const n = Math.round(Number(minutos) || 0);
+  if (n <= 0) return '0 min';
+  if (n < 60) return `${n} min`;
+  const dias = Math.floor(n / 1440);
+  const horas = Math.floor((n % 1440) / 60);
+  const mins = n % 60;
+  if (dias > 0) return horas ? `${dias} d ${horas} h` : `${dias} d`;
+  return mins ? `${horas} h ${mins} min` : `${horas} h`;
+}

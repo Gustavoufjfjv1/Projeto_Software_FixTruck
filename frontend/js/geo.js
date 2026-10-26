@@ -19,7 +19,10 @@ const Geo = {
       if (!resp.ok) return null;
       const data = await resp.json();
       const addr = data.address || {};
-      const via = addr.road || addr.pedestrian || addr.residential || '';
+      const viaBase = addr.road || addr.pedestrian || addr.footway || addr.residential || '';
+      const bairro = addr.suburb || addr.neighbourhood || addr.quarter || addr.hamlet || '';
+      const via = [viaBase, bairro && bairro.toLowerCase() !== viaBase.toLowerCase() ? bairro : '']
+        .filter(Boolean).join(', ');
       const cidadeBase = addr.city || addr.town || addr.village || addr.municipality || '';
       const uf = addr.state ? (UF_POR_ESTADO[addr.state] || addr.state) : '';
       const cidade = cidadeBase ? (uf ? `${cidadeBase}/${uf}` : cidadeBase) : '';

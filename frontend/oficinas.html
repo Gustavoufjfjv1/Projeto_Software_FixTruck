@@ -93,11 +93,14 @@ document.getElementById('gpsBtn').addEventListener('click', () => {
     navigator.geolocation.getCurrentPosition(pos => {
         document.getElementById('lat').value = pos.coords.latitude.toFixed(6);
         document.getElementById('lon').value = pos.coords.longitude.toFixed(6);
-        status.textContent = 'GPS capturado. Clique em Buscar para filtrar por raio.';
+        const precisao = Math.round(pos.coords.accuracy);
+        status.textContent = Number.isFinite(precisao)
+            ? `Posição atual capturada (${precisao} m de precisão). Filtrando por raio...`
+            : 'Posição atual capturada. Filtrando por raio...';
         document.getElementById('buscaForm').requestSubmit();
     }, () => {
-        status.textContent = 'Não foi possível obter o GPS.';
-    });
+        status.textContent = 'Não foi possível obter a posição atual.';
+    }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
 });
 
 document.getElementById('buscaForm').addEventListener('submit', (e) => {

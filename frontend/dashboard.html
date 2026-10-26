@@ -66,8 +66,8 @@ renderLayout('dashboard');
             </a>
             <a href="ocorrencias.html?status=resolvido" class="stat-card" style="text-decoration:none;color:inherit">
                 <div class="stat-label">Histórico Encerrado</div>
-                <div class="stat-value">${data.total_ocorrencias}</div>
-                <div class="stat-sub">total de ocorrências</div>
+                <div class="stat-value">${Math.max(0, Number(data.total_ocorrencias || 0) - Number(data.ocorrencias_abertas || 0))}</div>
+                <div class="stat-sub">${data.total_ocorrencias || 0} no total</div>
             </a>
             <div class="stat-card blue">
                 <div class="stat-label">Problema Mais Comum</div>
@@ -76,7 +76,7 @@ renderLayout('dashboard');
             </div>
             <a href="relatorios.html" class="stat-card orange" style="text-decoration:none;color:inherit">
                 <div class="stat-label">Tempo até Encontrar Oficina</div>
-                <div class="stat-value">${data.tempo_medio_oficina || 0}<span style="font-size:16px;font-weight:400"> min</span></div>
+                <div class="stat-value" style="font-size:22px">${formatarDuracao(data.tempo_medio_oficina)}</div>
                 <div class="stat-sub">média da abertura até vincular oficina</div>
             </a>
             <a href="frota.html" class="stat-card" style="text-decoration:none;color:inherit">

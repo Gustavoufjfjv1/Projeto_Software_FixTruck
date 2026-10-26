@@ -86,7 +86,13 @@ const BuscaOficinas = {
       L.marker([Number(of.lat), Number(of.lon)], { icon }).addTo(map).bindPopup(popup);
       bounds.push([Number(of.lat), Number(of.lon)]);
     });
-    if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
+    const centro = oc.lat && oc.lon ? [Number(oc.lat), Number(oc.lon)] : null;
+    const proximos = centro
+      ? bounds.filter(([la, lo]) => (la - centro[0]) ** 2 + (lo - centro[1]) ** 2 < 0.35 ** 2)
+      : bounds;
+    if (proximos.length > 1) map.fitBounds(proximos, { padding: [30, 30], maxZoom: 14 });
+    else if (centro) map.setView(centro, 14);
+    else if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
   },
 
   filtros(data, opts) {

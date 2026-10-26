@@ -86,10 +86,6 @@ if (!id) {
                             <label for="oficina_id">Oficina Utilizada *</label>
                             <select name="oficina_id" id="oficina_id" required>
                                 <option value="">Selecione a oficina...</option>
-                                ${oficinas.map(of => {
-                                    const sel = String(oficinaPre || oc.oficina_id || '') === String(of.id) ? 'selected' : '';
-                                    return `<option value="${of.id}" ${sel}>${esc(of.nome)} — ${esc(of.endereco || '')}</option>`;
-                                }).join('')}
                             </select>
                         </div>
                         <div class="form-group">
