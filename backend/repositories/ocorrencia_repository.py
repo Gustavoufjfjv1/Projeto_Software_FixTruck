@@ -37,6 +37,12 @@ _FILTRO_MOTORISTA = """o.empresa_id = ? AND (o.motorista_id = ? OR o.veiculo_id 
     SELECT id FROM veiculos WHERE motorista_id = ? AND empresa_id = ?))"""
 
 
+def _sql_status(status=''):
+    if status:
+        return ' AND o.status=?', [status]
+    return '', []
+
+
 class OcorrenciaRepository:
     """Consultas complexas de ocorrências (SQL puro)."""
 
@@ -207,7 +213,8 @@ class OcorrenciaRepository:
             params,
         ).fetchall()
         por_mes = db.execute(
-            f"""SELECT strftime('%m/%Y', o.data_abertura) as mes, COUNT(*) as c
+            f"""SELECT strftime('%m/%Y', COALESCE(o.data_reabertura, o.data_abertura)) as mes,
+                       COUNT(*) as c
                 FROM ocorrencias o {where}
                 GROUP BY mes ORDER BY MAX(o.data_abertura) DESC LIMIT 6""",
             params,

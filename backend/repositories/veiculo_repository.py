@@ -42,3 +42,13 @@ class VeiculoRepository:
         if not row:
             return None
         return Veiculo.buscar_por_id(row['id'])
+
+    @staticmethod
+    def buscar_placa_da_empresa(placa, empresa_id, ignorar_id=None):
+        query = 'SELECT id FROM veiculos WHERE empresa_id=? AND UPPER(placa)=UPPER(?)'
+        params = [empresa_id, placa]
+        if ignorar_id is not None:
+            query += ' AND id<>?'
+            params.append(ignorar_id)
+        row = get_db().execute(query, params).fetchone()
+        return Veiculo.buscar_por_id(row['id']) if row else None

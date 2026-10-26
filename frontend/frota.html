@@ -89,8 +89,78 @@
 
 <div class="card">
     <div class="card-header"><span class="card-title">Motoristas</span></div>
+    <form id="buscarMotoristaForm" class="filters-bar" style="padding:0 20px 16px;margin-bottom:0">
+        <input type="search" id="buscarMotorista" class="filter-select"
+               placeholder="Buscar por nome, CNH ou telefone" style="min-width:260px">
+        <button type="submit" class="btn btn-outline btn-sm">Buscar motorista</button>
+        <button type="button" id="limparBuscaMotorista" class="btn btn-outline btn-sm">Limpar</button>
+    </form>
     <div id="motoristas-container"></div>
 </div>
+
+<dialog id="editarMotoristaDialog">
+    <form id="editarMotoristaForm" style="min-width:min(420px, 85vw);padding:24px">
+        <h2 style="margin-bottom:18px">Editar motorista</h2>
+        <input type="hidden" id="editarMotoristaId">
+        <div class="form-group">
+            <label for="editarMotoristaNome">Nome *</label>
+            <input id="editarMotoristaNome" required>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="editarMotoristaCnh">CNH</label>
+                <input id="editarMotoristaCnh" inputmode="numeric" maxlength="11">
+            </div>
+            <div class="form-group">
+                <label for="editarMotoristaTelefone">Telefone</label>
+                <input id="editarMotoristaTelefone" inputmode="tel" maxlength="15">
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button type="button" class="btn btn-outline" data-fechar-dialog>Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="editarVeiculoDialog">
+    <form id="editarVeiculoForm" style="min-width:min(480px, 85vw);padding:24px">
+        <h2 style="margin-bottom:18px">Editar veículo</h2>
+        <input type="hidden" id="editarVeiculoId">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="editarVeiculoPlaca">Placa *</label>
+                <input id="editarVeiculoPlaca" required maxlength="7" style="text-transform:uppercase">
+            </div>
+            <div class="form-group">
+                <label for="editarVeiculoTipo">Tipo *</label>
+                <select id="editarVeiculoTipo" required>
+                    <option value="leve">Leve</option>
+                    <option value="médio">Médio</option>
+                    <option value="pesado">Pesado</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="editarVeiculoMarca">Marca</label>
+                <input id="editarVeiculoMarca">
+            </div>
+            <div class="form-group">
+                <label for="editarVeiculoModelo">Modelo</label>
+                <input id="editarVeiculoModelo">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="editarVeiculoMotorista">Motorista</label>
+            <select id="editarVeiculoMotorista"></select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button type="button" class="btn btn-outline" data-fechar-dialog>Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        </div>
+    </form>
+</dialog>
 
 <script src="js/api.js"></script>
 <script src="js/icons.js"></script>
@@ -104,6 +174,12 @@ Masks.bind(document.getElementById('mot_cnh'), 'cnh');
 Masks.bind(document.getElementById('mot_telefone'), 'telefone');
 Masks.bind(document.getElementById('vei_placa'), 'placa');
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    })[char]);
+}
+
 function optionsMotoristas(motoristas, selectedId) {
     return '<option value="">Sem motorista</option>' +
         motoristas.map(m =>
@@ -111,16 +187,28 @@ function optionsMotoristas(motoristas, selectedId) {
         ).join('');
 }
 
-async function load() {
+function motoristaAtivo(motorista) {
+    return Number(motorista.ativo) !== 0;
+}
+
+let motoristasAtuais = [];
+let veiculosAtuais = [];
+let handlersBound = false;
+
+async function load(termo = '') {
     try {
         const data = await Api.get('/api/frota');
-        const veiculos = data.veiculos || [];
-        const motoristas = data.motoristas || [];
+        veiculosAtuais = data.veiculos || [];
+        motoristasAtuais = data.motoristas || [];
+        const motoristas = termo
+            ? (await Api.get(`/api/frota/motoristas?busca=${encodeURIComponent(termo)}`)).motoristas
+            : motoristasAtuais;
+        const motoristasAtivos = motoristasAtuais.filter(motoristaAtivo);
 
-        document.getElementById('vei_motorista').innerHTML = optionsMotoristas(motoristas);
+        document.getElementById('vei_motorista').innerHTML = optionsMotoristas(motoristasAtivos);
 
         const veiEl = document.getElementById('veiculos-container');
-        if (veiculos.length) {
+        if (veiculosAtuais.length) {
             veiEl.innerHTML = `
                 <div class="table-wrap">
                     <table>
@@ -131,10 +219,11 @@ async function load() {
                                 <th>Tipo</th>
                                 <th>Motorista vinculado</th>
                                 <th>Vincular / alterar</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
-                        ${veiculos.map(v => `
+                        ${veiculosAtuais.map(v => `
                             <tr>
                                 <td style="font-weight:700">${esc(v.placa)}</td>
                                 <td>${(v.marca || '') + ' ' + (v.modelo || '—')}</td>
@@ -143,10 +232,14 @@ async function load() {
                                 <td>
                                     <form class="vincular-form" data-veiculo="${v.id}" style="display:flex;gap:8px;align-items:center">
                                         <select name="motorista_id" class="filter-select">
-                                            ${optionsMotoristas(motoristas, v.motorista_id)}
+                                            ${optionsMotoristas(motoristasAtivos, v.motorista_id)}
                                         </select>
                                         <button type="submit" class="btn btn-primary btn-sm">Vincular</button>
                                     </form>
+                                </td>
+                                <td style="display:flex;gap:6px">
+                                    <button type="button" class="btn btn-outline btn-sm editar-veiculo" data-id="${v.id}">Editar</button>
+                                    <button type="button" class="btn btn-outline btn-sm excluir-veiculo" data-id="${v.id}">Excluir</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -237,6 +330,127 @@ async function load() {
                     <h3>Nenhum motorista cadastrado</h3>
                 </div>
             `;
+        }
+
+        if (!handlersBound) {
+            handlersBound = true;
+            document.getElementById('buscarMotoristaForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const termo = document.getElementById('buscarMotorista').value.trim();
+            if (termo.length < 2) {
+                showFlash('Informe pelo menos 2 caracteres para pesquisar.', 'error');
+                return;
+            }
+            load(termo);
+        });
+
+        document.getElementById('limparBuscaMotorista').addEventListener('click', () => {
+            document.getElementById('buscarMotorista').value = '';
+            load();
+        });
+
+        document.querySelectorAll('[data-fechar-dialog]').forEach(button => {
+            button.addEventListener('click', () => button.closest('dialog').close());
+        });
+
+        document.getElementById('motoristas-container').addEventListener('click', async (event) => {
+            const button = event.target.closest('button');
+            if (!button) return;
+            const motoristaId = Number(button.dataset.id);
+            const motorista = motoristasAtuais.find(item => item.id === motoristaId);
+            if (!motorista) return;
+
+            if (button.classList.contains('editar-motorista')) {
+                document.getElementById('editarMotoristaId').value = motorista.id;
+                document.getElementById('editarMotoristaNome').value = motorista.nome || '';
+                document.getElementById('editarMotoristaCnh').value = motorista.cnh || '';
+                document.getElementById('editarMotoristaTelefone').value = motorista.telefone || '';
+                document.getElementById('editarMotoristaDialog').showModal();
+            } else if (button.classList.contains('alternar-motorista')) {
+                const acao = button.dataset.acao;
+                try {
+                    const res = await Api.patch(`/api/frota/motoristas/${motoristaId}/${acao}`, {});
+                    showFlash(res.mensagem, 'success');
+                    load(document.getElementById('buscarMotorista').value.trim());
+                } catch (err) {
+                    showFlash(err.message, 'error');
+                }
+            } else if (button.classList.contains('excluir-motorista')) {
+                if (!window.confirm(`Excluir o cadastro de ${motorista.nome}?`)) return;
+                try {
+                    const res = await Api.request(`/api/frota/motoristas/${motoristaId}`, { method: 'DELETE' });
+                    showFlash(res.mensagem, 'success');
+                    load(document.getElementById('buscarMotorista').value.trim());
+                } catch (err) {
+                    showFlash(err.message, 'error');
+                }
+            }
+        });
+
+        document.getElementById('veiculos-container').addEventListener('click', async (event) => {
+            const button = event.target.closest('button');
+            if (!button) return;
+            const veiculoId = Number(button.dataset.id);
+            const veiculo = veiculosAtuais.find(item => item.id === veiculoId);
+            if (!veiculo) return;
+
+            if (button.classList.contains('editar-veiculo')) {
+                document.getElementById('editarVeiculoId').value = veiculo.id;
+                document.getElementById('editarVeiculoPlaca').value = veiculo.placa || '';
+                document.getElementById('editarVeiculoTipo').value = veiculo.tipo_veiculo || 'pesado';
+                document.getElementById('editarVeiculoMarca').value = veiculo.marca || '';
+                document.getElementById('editarVeiculoModelo').value = veiculo.modelo || '';
+                document.getElementById('editarVeiculoMotorista').innerHTML =
+                    optionsMotoristas(motoristasAtuais.filter(motoristaAtivo), veiculo.motorista_id);
+                document.getElementById('editarVeiculoDialog').showModal();
+            } else if (button.classList.contains('excluir-veiculo')) {
+                if (!window.confirm(`Excluir o veículo ${veiculo.placa}?`)) return;
+                try {
+                    const res = await Api.request(`/api/frota/veiculos/${veiculoId}`, { method: 'DELETE' });
+                    showFlash(res.mensagem, 'success');
+                    load(document.getElementById('buscarMotorista').value.trim());
+                } catch (err) {
+                    showFlash(err.message, 'error');
+                }
+            }
+        });
+
+        document.getElementById('editarMotoristaForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const motoristaId = document.getElementById('editarMotoristaId').value;
+            try {
+                const res = await Api.put(`/api/frota/motoristas/${motoristaId}`, {
+                    nome: document.getElementById('editarMotoristaNome').value,
+                    cnh: document.getElementById('editarMotoristaCnh').value,
+                    telefone: document.getElementById('editarMotoristaTelefone').value,
+                });
+                document.getElementById('editarMotoristaDialog').close();
+                showFlash(res.mensagem, 'success');
+                load(document.getElementById('buscarMotorista').value.trim());
+            } catch (err) {
+                showFlash(err.message, 'error');
+            }
+        });
+
+            document.getElementById('editarVeiculoForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const veiculoId = document.getElementById('editarVeiculoId').value;
+            const motoristaId = document.getElementById('editarVeiculoMotorista').value;
+            try {
+                const res = await Api.put(`/api/frota/veiculos/${veiculoId}`, {
+                    placa: document.getElementById('editarVeiculoPlaca').value,
+                    tipo_veiculo: document.getElementById('editarVeiculoTipo').value,
+                    marca: document.getElementById('editarVeiculoMarca').value,
+                    modelo: document.getElementById('editarVeiculoModelo').value,
+                    motorista_id: motoristaId ? Number(motoristaId) : null,
+                });
+                document.getElementById('editarVeiculoDialog').close();
+                showFlash(res.mensagem, 'success');
+                load(document.getElementById('buscarMotorista').value.trim());
+            } catch (err) {
+                showFlash(err.message, 'error');
+            }
+            });
         }
     } catch (err) {
         showFlash(err.message, 'error');
