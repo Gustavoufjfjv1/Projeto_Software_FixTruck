@@ -90,7 +90,7 @@ function barRows(rows, labelKey, blue) {
             <div class="stat-card">
                 <div class="stat-label">Resolvidas</div>
                 <div class="stat-value">${encerradas}</div>
-                <div class="stat-sub">tempo médio ${tempo} min</div>
+                <div class="stat-sub">tempo médio ${formatarDuracao(tempo)}</div>
             </div>
         `;
 
@@ -143,12 +143,12 @@ function barRows(rows, labelKey, blue) {
                     </div>
                     <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:var(--radius-sm)">
                         <div class="empty-icon" style="margin-bottom:8px">${Icons.search(36)}</div>
-                        <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--blue)">${tempoOficina}<span style="font-size:14px;font-weight:400">min</span></div>
+                        <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--blue)">${formatarDuracao(tempoOficina)}</div>
                         <div style="font-size:13px;color:var(--gray-500)">Tempo médio até encontrar oficina</div>
                     </div>
                     <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:var(--radius-sm)">
                         <div class="empty-icon" style="margin-bottom:8px">${Icons.clock(36)}</div>
-                        <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--orange)">${tempo}<span style="font-size:14px;font-weight:400">min</span></div>
+                        <div style="font-family:var(--display);font-size:28px;font-weight:700;color:var(--orange)">${formatarDuracao(tempo)}</div>
                         <div style="font-size:13px;color:var(--gray-500)">Tempo médio parado (total)</div>
                     </div>
                     <div style="text-align:center;padding:20px;background:var(--gray-50);border-radius:var(--radius-sm)">

@@ -58,7 +58,10 @@ async function load() {
                 ${oc.descricao ? `<div class="info-row"><span class="info-label">Descrição</span><span class="info-value" style="text-align:left;max-width:60%">${esc(oc.descricao)}</span></div>` : ''}
                 <div class="info-row"><span class="info-label">Local</span><span class="info-value" style="font-size:13px">${esc(oc.endereco || '—')}</span></div>
                 <div class="info-row"><span class="info-label">Pane total</span><span class="info-value">${oc.pane_total ? 'Sim' : 'Não'}</span></div>
-                <div class="info-row"><span class="info-label">Localização GPS</span><span class="info-value" style="font-size:13px">${oc.lat && oc.lon ? oc.lat + ', ' + oc.lon : '—'}</span></div>
+                <div class="info-row"><span class="info-label">Localização GPS</span><span class="info-value" style="font-size:13px">${oc.lat && oc.lon
+                    ? `${esc(String(oc.lat))}, ${esc(String(oc.lon))} — <a href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(oc.lat)}&mlon=${encodeURIComponent(oc.lon)}#map=16/${encodeURIComponent(oc.lat)}/${encodeURIComponent(oc.lon)}" target="_blank" rel="noopener">ver no mapa</a><br><span style="color:var(--gray-500)">A busca de oficinas usa estas coordenadas, não só o texto do endereço.</span>`
+                    : '—'}</span></div>
+                ${oc.lat && oc.lon ? `<iframe title="Mapa da ocorrência" style="width:100%;height:220px;border:1px solid var(--gray-200);border-radius:12px;margin:0 0 12px" src="https://www.openstreetmap.org/export/embed.html?bbox=${Number(oc.lon) - 0.02},${Number(oc.lat) - 0.02},${Number(oc.lon) + 0.02},${Number(oc.lat) + 0.02}&layer=mapnik&marker=${encodeURIComponent(oc.lat)},${encodeURIComponent(oc.lon)}"></iframe>` : ''}
                 <div class="info-row">
                     <span class="info-label">Oficina</span>
                     <span class="info-value" style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
