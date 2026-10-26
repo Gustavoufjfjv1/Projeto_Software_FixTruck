@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, g, request, make_response
 from auth import login_required
-from services import GerarRelatorioService, ServiceError
+from services import GerarRelatorioCsvService, GerarRelatorioService, ServiceError
 
 
 class RelatorioController:
@@ -21,6 +21,22 @@ class RelatorioController:
         }
         try:
             return jsonify(GerarRelatorioService().executar(g.empresa_id, filtros))
+        except ServiceError as e:
+            return jsonify({'erro': e.mensagem}), e.status
+
+    def exportar_csv(self):
+        try:
+            csv_texto = GerarRelatorioCsvService().executar(
+                g.empresa_id,
+                request.args.get('periodo', ''),
+                request.args.get('status', ''),
+            )
+            response = make_response(csv_texto)
+            response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+            response.headers['Content-Disposition'] = (
+                'attachment; filename="relatorio-fixtruck.csv"'
+            )
+            return response
         except ServiceError as e:
             return jsonify({'erro': e.mensagem}), e.status
 

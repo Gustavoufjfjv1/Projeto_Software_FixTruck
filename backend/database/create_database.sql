@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS ocorrencias (
     motivo_resolucao TEXT,
     observacoes TEXT,
     data_abertura DATETIME,
+    data_reabertura DATETIME,
     data_encerramento DATETIME,
     data_vinculacao DATETIME,
     registrada_por TEXT NOT NULL DEFAULT 'empresa' CHECK (registrada_por IN ('empresa', 'motorista')),

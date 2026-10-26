@@ -10,4 +10,4 @@ class FiltrarRelatorioService:
             raise ServiceError('Período de relatório inválido.', 400)
         if status not in self.STATUS_VALIDOS:
             raise ServiceError('Status de ocorrência inválido.', 400)
-        return GerarRelatorioService().executar(empresa_id, periodo, status)
+        return GerarRelatorioService().executar(empresa_id, {'periodo': periodo, 'status': status})
