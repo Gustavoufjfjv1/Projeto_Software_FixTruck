@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, g, request
+from flask import Blueprint, jsonify, g, request, make_response
 from auth import login_required
 from services import GerarRelatorioService, ServiceError
 
@@ -9,6 +9,9 @@ class RelatorioController:
     def __init__(self):
         self.bp = Blueprint('relatorios', __name__, url_prefix='/api/relatorios')
         self.bp.add_url_rule('', view_func=login_required(self.obter), methods=['GET'])
+        self.bp.add_url_rule(
+            '/exportar', view_func=login_required(self.exportar_csv), methods=['GET']
+        )
 
     def obter(self):
         filtros = {

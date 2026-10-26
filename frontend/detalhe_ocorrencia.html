@@ -35,7 +35,7 @@ async function load() {
             ? `<a href="editar_ocorrencia.html?id=${oc.id}" class="btn btn-outline">${Icons.edit(16)} Editar</a>
                <a href="buscar_oficinas.html?id=${oc.id}" class="btn btn-outline">Buscar oficinas</a>
                <a href="encerrar_ocorrencia.html?id=${oc.id}" class="btn btn-primary">Encerrar (resolvido)</a>`
-            : '';
+            : `<button type="button" class="btn btn-outline" id="reabrirOcorrencia">Reabrir ocorrência</button>`;
 
         document.getElementById('page-root').innerHTML = `
             <div class="page-header">
@@ -94,6 +94,19 @@ async function load() {
                 try {
                     const res = await Api.post(`/api/oficinas/${oc.oficina_id}/favoritar`);
                     showFlash(res.mensagem || 'Favorito atualizado.', 'success');
+                    load();
+                } catch (err) {
+                    showFlash(err.message, 'error');
+                }
+            });
+        }
+        const reabrirBtn = document.getElementById('reabrirOcorrencia');
+        if (reabrirBtn) {
+            reabrirBtn.addEventListener('click', async () => {
+                if (!window.confirm('Reabrir esta ocorrência? O prazo de resolução será reiniciado.')) return;
+                try {
+                    const resultado = await Api.post(`/api/ocorrencias/${id}/reabrir`, {});
+                    showFlash(resultado.mensagem || 'Ocorrência reaberta.', 'success');
                     load();
                 } catch (err) {
                     showFlash(err.message, 'error');

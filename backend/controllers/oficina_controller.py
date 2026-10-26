@@ -42,6 +42,8 @@ class OficinaController:
             raio=request.args.get('raio', type=float),
             lat=request.args.get('lat', type=float),
             lon=request.args.get('lon', type=float),
+            limite=request.args.get('limite', type=int),
+            somente_nome=request.args.get('campo') == 'nome',
         ))
 
     def cadastrar(self):
